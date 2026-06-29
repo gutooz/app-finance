@@ -108,6 +108,15 @@ export default function Auth({ initialMode = 'login' }: { initialMode?: Mode }) 
         gender,
       })
       setSession({ access_token: data.session.access_token, user: data.user })
+      setProfile({
+        id: data.user.id,
+        email: data.user.email,
+        name,
+        monthly_income: parseFloat(income) || 0,
+        gender,
+        couple_id: null,
+      })
+      setCouple(null)
       navigate('/setup')
     } catch (error: unknown) {
       const detail = getErrorMessage(error, 'Não foi possível criar sua conta')
