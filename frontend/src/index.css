@@ -1,0 +1,65 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: #f8f7fc; }
+
+#root {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+@layer components {
+  .btn-primary {
+    @apply w-full bg-pink-500 hover:bg-pink-600 active:bg-pink-700 text-white font-semibold py-3 px-4 rounded-2xl transition-colors cursor-pointer;
+  }
+  .btn-secondary {
+    @apply w-full bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium py-3 px-4 rounded-2xl transition-colors cursor-pointer;
+  }
+  .btn-ghost {
+    @apply text-pink-500 font-medium py-2 px-4 rounded-xl hover:bg-pink-50 transition-colors cursor-pointer;
+  }
+  .card {
+    @apply bg-white rounded-2xl p-4 shadow-sm border border-gray-100;
+  }
+  .input {
+    @apply w-full border border-gray-200 rounded-xl px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent bg-white;
+  }
+  .page {
+    @apply max-w-md mx-auto w-full px-4 pb-24;
+  }
+}
+
+@layer utilities {
+  .theme-male .bg-pink-50 { @apply bg-blue-50; }
+  .theme-male .bg-pink-100 { @apply bg-blue-100; }
+  .theme-male .bg-pink-200 { @apply bg-blue-200; }
+  .theme-male .bg-pink-300 { @apply bg-blue-300; }
+  .theme-male .bg-pink-400 { @apply bg-blue-400; }
+  .theme-male .bg-pink-500 { @apply bg-blue-500; }
+  .theme-male .bg-pink-600 { @apply bg-blue-600; }
+  .theme-male .bg-pink-700 { @apply bg-blue-700; }
+  .theme-male .hover\:bg-pink-50:hover { @apply bg-blue-50; }
+  .theme-male .hover\:bg-pink-100:hover { @apply bg-blue-100; }
+  .theme-male .hover\:bg-pink-200:hover { @apply bg-blue-200; }
+  .theme-male .hover\:bg-pink-600:hover { @apply bg-blue-600; }
+  .theme-male .active\:bg-pink-700:active { @apply bg-blue-700; }
+  .theme-male .text-pink-100 { @apply text-blue-100; }
+  .theme-male .text-pink-200 { @apply text-blue-200; }
+  .theme-male .text-pink-500 { @apply text-blue-500; }
+  .theme-male .text-pink-600 { @apply text-blue-600; }
+  .theme-male .text-pink-700 { @apply text-blue-700; }
+  .theme-male .border-pink-100 { @apply border-blue-100; }
+  .theme-male .border-pink-300 { @apply border-blue-300; }
+  .theme-male .border-pink-500 { @apply border-blue-500; }
+  .theme-male .focus\:ring-pink-300:focus { @apply ring-blue-300; }
+  .theme-male .from-pink-50 { --tw-gradient-from: #eff6ff var(--tw-gradient-from-position); --tw-gradient-to: rgb(239 246 255 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+  .theme-male .from-pink-400 { --tw-gradient-from: #60a5fa var(--tw-gradient-from-position); --tw-gradient-to: rgb(96 165 250 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+  .theme-male .from-pink-500 { --tw-gradient-from: #3b82f6 var(--tw-gradient-from-position); --tw-gradient-to: rgb(59 130 246 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+  .theme-male .to-purple-50 { --tw-gradient-to: #eff6ff var(--tw-gradient-to-position); }
+  .theme-male .to-purple-500 { --tw-gradient-to: #0ea5e9 var(--tw-gradient-to-position); }
+  .theme-male .to-purple-600 { --tw-gradient-to: #2563eb var(--tw-gradient-to-position); }
+}
