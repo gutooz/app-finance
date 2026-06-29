@@ -1,3 +1,4 @@
+from bson import ObjectId
 from telegram import Update
 from telegram.ext import ContextTypes, ConversationHandler
 
@@ -75,7 +76,7 @@ async def receive_password(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         )
         return ConversationHandler.END
 
-    profile_doc = db.profiles.find_one({"_id": user_id})
+    profile_doc = db.profiles.find_one({"_id": ObjectId(user_id)})
     if not profile_doc or not verify_password(password, profile_doc.get("password_hash", "")):
         context.user_data["_login_uid"] = user_id  # keep email step done, only retry password
         await update.effective_chat.send_message(
