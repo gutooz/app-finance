@@ -118,3 +118,6 @@ export const deleteGoal = (coupleId: string | number, goalId: string | number) =
 // --- Summary ---
 export const getSummary = (coupleId: string | number, month?: number, year?: number) =>
   api.get(`/couples/${coupleId}/summary/`, { params: { month, year } }).then(r => r.data)
+
+// --- Admin ---
+export const getAdminStats = () => api.get('/admin/stats').then(r => r.data)
