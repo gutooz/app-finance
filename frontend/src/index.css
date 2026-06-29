@@ -4,6 +4,7 @@
 @tailwind utilities;
 
 * { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: #f8f7fc; }
 
 #root {
@@ -34,6 +35,24 @@ body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: #f8f7
 }
 
 @layer utilities {
+  .animate-float-soft {
+    animation: float-soft 7s ease-in-out infinite;
+  }
+
+  @keyframes float-soft {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
   .theme-male .bg-pink-50 { @apply bg-blue-50; }
   .theme-male .bg-pink-100 { @apply bg-blue-100; }
   .theme-male .bg-pink-200 { @apply bg-blue-200; }

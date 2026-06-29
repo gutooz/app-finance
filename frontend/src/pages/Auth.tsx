@@ -58,11 +58,11 @@ function CoupleIllustration() {
   )
 }
 
-export default function Auth() {
+export default function Auth({ initialMode = 'login' }: { initialMode?: Mode }) {
   const navigate = useNavigate()
   const { setSession, setProfile, setCouple } = useStore()
 
-  const [mode, setMode] = useState<Mode>('login')
+  const [mode, setMode] = useState<Mode>(initialMode)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')

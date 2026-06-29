@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useStore } from './store/useStore'
 import { getMe } from './api/client'
+import Landing from './pages/Landing'
 import Auth from './pages/Auth'
 import CoupleSetup from './pages/CoupleSetup'
 import Dashboard from './pages/Dashboard'
@@ -45,7 +46,10 @@ function App() {
     <div className={themeClass}>
       <BrowserRouter>
         <Routes>
-          <Route path="/auth" element={<Auth />} />
+          <Route path="/" element={<Landing />} />
+          <Route path="/auth" element={<Auth key="auth-login" />} />
+          <Route path="/login" element={<Auth key="login" />} />
+          <Route path="/cadastro" element={<Auth key="register" initialMode="register" />} />
           <Route path="/complete-profile" element={<CompleteProfile />} />
           <Route path="/setup" element={<RequireAuth><CoupleSetup /></RequireAuth>} />
           <Route path="/dashboard" element={<RequireCouple><Dashboard /></RequireCouple>} />
@@ -55,8 +59,7 @@ function App() {
           <Route path="/summary" element={<RequireCouple><Summary /></RequireCouple>} />
           <Route path="/calendar" element={<RequireCouple><Calendar /></RequireCouple>} />
           <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
-          <Route path="/" element={<Navigate to="/auth" replace />} />
-          <Route path="*" element={<Navigate to="/auth" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </div>
