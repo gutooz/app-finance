@@ -76,10 +76,13 @@ function DonutChart({ segments, total }: { segments: DonutSeg[]; total: number }
 // ─── BarChart ─────────────────────────────────────────────────────────────────
 interface BarPoint { month: string; value: number }
 
-function BarChart({ data }: { data: BarPoint[] }) {
+function BarChart({ data, variant = 'female' }: { data: BarPoint[]; variant?: 'female' | 'male' }) {
   const max = Math.max(...data.map(d => d.value), 1)
   const W = 280, H = 88, bw = 28, n = data.length
   const gap = (W - bw * n) / (n + 1)
+  const colors = variant === 'male'
+    ? { active: '#3b82f6', muted: '#bfdbfe', text: '#2563eb' }
+    : { active: '#ec4899', muted: '#fbcfe8', text: '#db2777' }
 
   return (
     <svg viewBox={`0 0 ${W} ${H + 22}`} className="w-full" preserveAspectRatio="xMidYMid meet">
@@ -104,9 +107,9 @@ function BarChart({ data }: { data: BarPoint[] }) {
         return (
           <g key={i}>
             <rect x={x} y={y} width={bw} height={bh} rx={5}
-              fill={isCurrent ? '#3b82f6' : '#bfdbfe'} />
+              fill={isCurrent ? colors.active : colors.muted} />
             {isCurrent && (
-              <text x={x + bw / 2} y={y - 4} textAnchor="middle" fontSize={7} fill="#2563eb" fontWeight="700">
+              <text x={x + bw / 2} y={y - 4} textAnchor="middle" fontSize={7} fill={colors.text} fontWeight="700">
                 {fmtK(d.value)}
               </text>
             )}
@@ -168,7 +171,7 @@ function MiniCalendar({ bills, initMonth, initYear }: { bills: any[]; initMonth:
                 <span className={[
                   'w-6 h-6 flex items-center justify-center text-[11px] rounded-full transition-colors',
                   isToday(day)
-                    ? 'bg-blue-500 text-white font-bold'
+                    ? 'bg-pink-500 text-white font-bold'
                     : billDays.has(day)
                       ? 'text-orange-600 font-semibold hover:bg-orange-50 cursor-pointer'
                       : 'text-gray-600 hover:bg-gray-100 cursor-pointer'
@@ -228,6 +231,7 @@ export default function Dashboard() {
   const partner      = isUser1 ? couple.user2 : couple.user1
   const myName       = me?.name || profile?.name || 'Você'
   const partnerName  = partner?.name || 'Parceiro(a)'
+  const profileGender = profile?.gender === 'male' ? 'male' : 'female'
 
   const totalIncome   = (couple.user1.monthly_income || 0) + (couple.user2?.monthly_income || 0)
   const totalExpenses = summary?.total_expenses || 0
@@ -268,18 +272,18 @@ export default function Dashboard() {
 
   // ─── Quick actions ──────────────────────────────────────────────────────────
   const quickActions = [
-    { icon: Plus,       label: 'Gasto',      color: 'bg-blue-500',   path: '/expenses/new' },
+    { icon: Plus,       label: 'Gasto',      color: 'bg-pink-500',   path: '/expenses/new' },
     { icon: CalendarDays, label: 'Calendário', color: 'bg-orange-500', path: '/calendar' },
     { icon: Home,       label: 'Contas',     color: 'bg-purple-500', path: '/bills' },
     { icon: Target,     label: 'Metas',      color: 'bg-green-500',  path: '/goals' },
-    { icon: BarChart2,  label: 'Resumo',     color: 'bg-blue-600',   path: '/summary' },
+    { icon: BarChart2,  label: 'Resumo',     color: 'bg-pink-600',   path: '/summary' },
   ]
 
   // ─── KPI cards ──────────────────────────────────────────────────────────────
   const kpiCards = [
     {
-      iconEl: <TrendingDown size={20} className="text-blue-600" />,
-      iconBg: 'bg-blue-50',
+      iconEl: <TrendingDown size={20} className="text-pink-600" />,
+      iconBg: 'bg-pink-50',
       label: 'Gastos do mês',
       value: fmt(totalExpenses),
       sub: hasComparison
@@ -325,8 +329,8 @@ export default function Dashboard() {
 
       {/* ════ HEADER ═══════════════════════════════════════════════════════════ */}
       <div
-        className="relative overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, #1d4ed8 0%, #1e40af 60%, #1e3a8a 100%)', borderRadius: '0 0 2.5rem 2.5rem' }}
+        className="relative overflow-hidden bg-gradient-to-br from-pink-500 to-purple-600"
+        style={{ borderRadius: '0 0 2.5rem 2.5rem' }}
       >
         {/* Decorative illustration */}
         <svg viewBox="0 0 260 180" className="absolute right-0 top-0 h-full w-auto opacity-[0.07] pointer-events-none select-none" aria-hidden>
@@ -347,7 +351,7 @@ export default function Dashboard() {
           {/* Greeting row */}
           <div className="flex items-start justify-between mb-5">
             <div>
-              <p className="text-blue-200 text-sm font-medium">Olá, {myName} 👋</p>
+              <p className="text-pink-100 text-sm font-medium">Olá, {myName} 👋</p>
               <h1 className="text-2xl font-bold text-white mt-0.5 leading-tight">
                 {myName} & {partnerName}
               </h1>
@@ -377,12 +381,12 @@ export default function Dashboard() {
                 <Wallet size={20} className="text-white" />
               </div>
               <div className="min-w-0">
-                <p className="text-blue-200 text-xs font-medium">{MS[month - 1]} {year}</p>
+                <p className="text-pink-100 text-xs font-medium">{MS[month - 1]} {year}</p>
                 {loading
                   ? <div className="h-8 w-44 bg-white/20 rounded-lg animate-pulse mt-1" />
                   : <p className="text-[1.75rem] font-bold text-white leading-tight">{fmt(totalExpenses)}</p>
                 }
-                <p className="text-blue-200 text-xs mt-0.5">gastos do casal este mês</p>
+                <p className="text-pink-100 text-xs mt-0.5">gastos do casal este mês</p>
               </div>
             </div>
             {hasComparison && !loading && (
@@ -392,7 +396,7 @@ export default function Dashboard() {
                   <p className="text-emerald-300 text-sm font-bold leading-tight">
                     {diffPct <= 0 ? 'Economia' : 'Aumento'} de {Math.abs(diffPct).toFixed(0)}%
                   </p>
-                  <p className="text-blue-200 text-[10px]">em relação a {prevMonthName} {prevSummary?.year || year}</p>
+                  <p className="text-pink-100 text-[10px]">em relação a {prevMonthName} {prevSummary?.year || year}</p>
                 </div>
               </div>
             )}
@@ -441,21 +445,21 @@ export default function Dashboard() {
             ) : (
               <>
                 {/* My row */}
-                <div className="bg-blue-50 rounded-xl p-3 mb-2">
+                <div className="bg-pink-50 rounded-xl p-3 mb-2">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                    <div className="w-7 h-7 rounded-full bg-pink-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                       {myName.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0 flex items-center justify-between">
                       <span className="text-sm font-semibold text-gray-700 truncate">{myName}</span>
-                      <span className="text-xs font-bold text-blue-600 ml-1 flex-shrink-0">
+                      <span className="text-xs font-bold text-pink-600 ml-1 flex-shrink-0">
                         {myPaid + partnerPaid > 0 ? Math.round((myPaid / (myPaid + partnerPaid)) * 100) : 50}%
                       </span>
                     </div>
                   </div>
-                  <p className="text-[15px] font-bold text-blue-700 mb-1.5">{fmt(myPaid)}</p>
-                  <div className="h-1.5 bg-blue-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-500 rounded-full transition-all duration-700"
+                  <p className="text-[15px] font-bold text-pink-700 mb-1.5">{fmt(myPaid)}</p>
+                  <div className="h-1.5 bg-pink-200 rounded-full overflow-hidden">
+                    <div className="h-full bg-pink-500 rounded-full transition-all duration-700"
                       style={{ width: `${maxPaid > 0 ? (myPaid / maxPaid) * 100 : 0}%` }} />
                   </div>
                 </div>
@@ -498,7 +502,7 @@ export default function Dashboard() {
                 Últimos 6 meses ▾
               </span>
             </div>
-            <BarChart data={chartData} />
+            <BarChart data={chartData} variant={profileGender} />
           </div>
 
           {/* Category Donut */}
@@ -549,7 +553,7 @@ export default function Dashboard() {
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-gray-700 text-sm">Últimas transações</h3>
-              <button onClick={() => navigate('/summary')} className="text-[11px] text-blue-500 hover:text-blue-700 font-semibold transition-colors">
+              <button onClick={() => navigate('/summary')} className="text-[11px] text-pink-500 hover:text-pink-600 font-semibold transition-colors">
                 Ver todas
               </button>
             </div>
@@ -561,7 +565,7 @@ export default function Dashboard() {
               <div className="py-5 text-center">
                 <p className="text-2xl mb-1">💸</p>
                 <p className="text-xs text-gray-400">Nenhum gasto este mês</p>
-                <button onClick={() => navigate('/expenses/new')} className="text-xs text-blue-500 font-semibold mt-1">
+                <button onClick={() => navigate('/expenses/new')} className="text-xs text-pink-500 font-semibold mt-1">
                   Registrar gasto
                 </button>
               </div>
@@ -604,7 +608,7 @@ export default function Dashboard() {
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-gray-700 text-sm">Contas a vencer</h3>
-              <button onClick={() => navigate('/bills')} className="text-[11px] text-blue-500 hover:text-blue-700 font-semibold transition-colors">
+              <button onClick={() => navigate('/bills')} className="text-[11px] text-pink-500 hover:text-pink-600 font-semibold transition-colors">
                 Ver todas
               </button>
             </div>
@@ -627,7 +631,7 @@ export default function Dashboard() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[12px] font-semibold text-gray-800 truncate leading-tight">{bill.name}</p>
-                      <p className="text-[10px] text-blue-500 font-medium">
+                      <p className="text-[10px] text-pink-500 font-medium">
                         {bill.due_day} {MS[month - 1]} {year}
                       </p>
                     </div>
@@ -642,7 +646,7 @@ export default function Dashboard() {
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-gray-700 text-sm">Metas</h3>
-              <button onClick={() => navigate('/goals')} className="text-[11px] text-blue-500 hover:text-blue-700 font-semibold transition-colors">
+              <button onClick={() => navigate('/goals')} className="text-[11px] text-pink-500 hover:text-pink-600 font-semibold transition-colors">
                 Ver todas
               </button>
             </div>
@@ -654,14 +658,14 @@ export default function Dashboard() {
               <div className="py-5 text-center">
                 <Target size={28} className="text-gray-300 mx-auto mb-1.5" />
                 <p className="text-xs text-gray-400">Nenhuma meta ainda</p>
-                <button onClick={() => navigate('/goals')} className="text-xs text-blue-500 font-semibold mt-1">
+                <button onClick={() => navigate('/goals')} className="text-xs text-pink-500 font-semibold mt-1">
                   Criar meta
                 </button>
               </div>
             ) : (
               <div className="space-y-2.5">
                 {goals.slice(0, 2).map((g: any, i: number) => {
-                  const bar = i === 0 ? ['bg-blue-500', 'bg-blue-100'] : ['bg-green-500', 'bg-green-100']
+                  const bar = i === 0 ? ['bg-pink-500', 'bg-pink-100'] : ['bg-green-500', 'bg-green-100']
                   return (
                     <div key={g.name} className="bg-gray-50 rounded-xl p-3">
                       <div className="flex items-start gap-2 mb-2">
