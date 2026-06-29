@@ -78,8 +78,8 @@ export default function Auth({ initialMode = 'login' }: { initialMode?: Mode }) 
     try {
       const data = await loginUser({ email, password })
       setSession({ access_token: data.session.access_token, user: data.user })
-      if (data.profile) setProfile(data.profile)
-      if (data.couple) setCouple(data.couple)
+      setProfile(data.profile || null)
+      setCouple(data.couple || null)
       navigate(data.couple ? '/dashboard' : '/setup')
     } catch (error: unknown) {
       setError(getErrorMessage(error, 'Email ou senha incorretos'))
