@@ -146,12 +146,12 @@ async def webhook_info():
 
 
 @router.post("/set-webhook")
-async def set_webhook():
+async def set_webhook(request: Request):
     token = os.getenv("BOT_TOKEN")
     if not token:
         raise HTTPException(status_code=500, detail="BOT_TOKEN nao configurado")
 
-    base_url = os.getenv("API_BASE_URL") or os.getenv("FRONTEND_URL")
+    base_url = os.getenv("API_BASE_URL") or os.getenv("FRONTEND_URL") or str(request.base_url)
     if not base_url:
         raise HTTPException(status_code=500, detail="API_BASE_URL nao configurado")
 
@@ -166,5 +166,6 @@ async def set_webhook():
 
     async with httpx.AsyncClient(timeout=15) as client:
         response = await client.post(f"https://api.telegram.org/bot{token}/setWebhook", json=body)
-        response.raise_for_status()
+        if response.status_code >= 400:
+            raise HTTPException(status_code=502, detail=response.text)
         return response.json()
