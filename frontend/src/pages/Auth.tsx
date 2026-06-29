@@ -72,6 +72,8 @@ export default function Auth({ initialMode = 'login' }: { initialMode?: Mode }) 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  const ADMIN_EMAILS = ['gustavosantiago2912@gmail.com', 'snyderisabellaalves@gmail.com']
+
   const handleLogin = async () => {
     setLoading(true)
     setError('')
@@ -80,7 +82,11 @@ export default function Auth({ initialMode = 'login' }: { initialMode?: Mode }) 
       setSession({ access_token: data.session.access_token, user: data.user })
       setProfile(data.profile || null)
       setCouple(data.couple || null)
-      navigate(data.couple ? '/dashboard' : '/setup')
+      if (ADMIN_EMAILS.includes(data.user.email)) {
+        navigate('/admin')
+      } else {
+        navigate(data.couple ? '/dashboard' : '/setup')
+      }
     } catch (error: unknown) {
       setError(getErrorMessage(error, 'Email ou senha incorretos'))
     } finally {
