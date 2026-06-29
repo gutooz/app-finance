@@ -1,14 +1,28 @@
 {
   "version": 2,
-  "buildCommand": "cd frontend && npm install && npm run build",
-  "outputDirectory": "frontend/dist",
-  "rewrites": [
-    { "source": "/docs", "destination": "/api/index.py" },
-    { "source": "/openapi.json", "destination": "/api/index.py" },
-    { "source": "/auth/:path*", "destination": "/api/index.py" },
-    { "source": "/couples/:path*", "destination": "/api/index.py" },
-    { "source": "/telegram/:path*", "destination": "/api/index.py" },
-    { "source": "/whatsapp/:path*", "destination": "/api/index.py" },
-    { "source": "/:path*", "destination": "/index.html" }
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
+  "routes": [
+    { "src": "/docs", "dest": "api/index.py" },
+    { "src": "/openapi.json", "dest": "api/index.py" },
+    { "src": "/auth/(.*)", "dest": "api/index.py" },
+    { "src": "/couples/(.*)", "dest": "api/index.py" },
+    { "src": "/telegram/(.*)", "dest": "api/index.py" },
+    { "src": "/whatsapp/(.*)", "dest": "api/index.py" },
+    { "src": "/assets/(.*)", "dest": "frontend/assets/$1" },
+    { "src": "/favicon.svg", "dest": "frontend/favicon.svg" },
+    { "src": "/icons.svg", "dest": "frontend/icons.svg" },
+    { "src": "/(.*)", "dest": "frontend/index.html" }
   ]
 }
