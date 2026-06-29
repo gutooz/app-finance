@@ -177,7 +177,7 @@ function PublicHeader() {
       {menuOpen && (
         <div className="fixed inset-0 top-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu de navegação">
           <button className="absolute inset-0 bg-[#101828]/20 backdrop-blur-sm" aria-label="Fechar menu" onClick={() => setMenuOpen(false)} />
-          <div className="absolute right-4 top-4 w-[min(360px,calc(100vw-2rem))] rounded-[2rem] border border-white/70 bg-white/86 p-5 shadow-[0_24px_70px_rgba(16,24,40,0.18)] backdrop-blur-2xl">
+          <div className="absolute inset-x-3 top-3 max-h-[calc(100svh-1.5rem)] overflow-y-auto rounded-[1.5rem] border border-white/70 bg-white/90 p-4 shadow-[0_24px_70px_rgba(16,24,40,0.18)] backdrop-blur-2xl sm:inset-x-auto sm:right-4 sm:top-4 sm:w-[min(360px,calc(100vw-2rem))] sm:rounded-[2rem] sm:p-5">
             <div className="mb-5 flex items-center justify-between">
               <div className="flex items-center gap-3 font-extrabold">
                 <LogoMark size="sm" />
@@ -212,7 +212,7 @@ function PublicHeader() {
 
 function PhonePreview() {
   return (
-    <div className="relative mx-auto w-full max-w-[420px] animate-float-soft">
+    <div className="relative mx-auto w-full max-w-[310px] animate-float-soft sm:max-w-[380px] lg:max-w-[420px]">
       <div className="absolute -left-8 top-20 z-20 hidden rounded-3xl border border-white/70 bg-white/70 p-4 shadow-[0_18px_50px_rgba(16,24,40,0.12)] backdrop-blur-xl sm:block">
         <p className="text-xs font-bold text-[#667085]">Economia</p>
         <p className="mt-1 text-lg font-extrabold text-[#101828]">12% este mês</p>
@@ -224,20 +224,20 @@ function PhonePreview() {
         </div>
         <p className="mt-2 text-sm font-extrabold text-[#D92D7D]">68%</p>
       </div>
-      <div className="rounded-[3rem] border border-[#101828]/10 bg-[#101828] p-3 shadow-[0_36px_90px_rgba(16,24,40,0.24)]">
-        <div className="overflow-hidden rounded-[2.4rem] bg-[#FFF9FC]">
-          <div className="mx-auto mt-3 h-6 w-28 rounded-full bg-[#101828]" />
-          <div className="p-5">
+      <div className="rounded-[2.2rem] border border-[#101828]/10 bg-[#101828] p-2 shadow-[0_36px_90px_rgba(16,24,40,0.24)] sm:rounded-[3rem] sm:p-3">
+        <div className="overflow-hidden rounded-[1.8rem] bg-[#FFF9FC] sm:rounded-[2.4rem]">
+          <div className="mx-auto mt-3 h-5 w-24 rounded-full bg-[#101828] sm:h-6 sm:w-28" />
+          <div className="p-4 sm:p-5">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-bold text-[#667085]">Junho</p>
-                <h3 className="text-xl font-extrabold text-[#101828]">Resumo do casal</h3>
+                <h3 className="text-lg font-extrabold text-[#101828] sm:text-xl">Resumo do casal</h3>
               </div>
               <LogoMark size="sm" />
             </div>
-            <div className="mt-5 rounded-3xl bg-gradient-to-br from-[#EC3E92] to-[#9B5CFF] p-5 text-white shadow-[0_18px_40px_rgba(236,62,146,0.20)]">
+            <div className="mt-4 rounded-3xl bg-gradient-to-br from-[#EC3E92] to-[#9B5CFF] p-4 text-white shadow-[0_18px_40px_rgba(236,62,146,0.20)] sm:mt-5 sm:p-5">
               <p className="text-sm font-semibold text-white/80">Saldo atual</p>
-              <p className="mt-2 text-3xl font-extrabold">R$ 4.820</p>
+              <p className="mt-2 text-2xl font-extrabold sm:text-3xl">R$ 4.820</p>
               <div className="mt-4 grid grid-cols-2 gap-3 text-xs font-bold">
                 <span className="rounded-2xl bg-white/18 p-3">Receitas R$ 8.400</span>
                 <span className="rounded-2xl bg-white/18 p-3">Gastos R$ 3.580</span>
@@ -258,7 +258,7 @@ function PhonePreview() {
                 <p className="text-sm font-extrabold">Categorias</p>
                 <PieChart className="text-[#EC3E92]" size={20} />
               </div>
-              <div className="mt-4 flex h-24 items-end gap-2">
+              <div className="mt-4 flex h-20 items-end gap-2 sm:h-24">
                 {[42, 70, 54, 88, 64, 36].map((height, index) => (
                   <span key={index} className="flex-1 rounded-full bg-gradient-to-t from-[#EC3E92] to-[#F4E9FF]" style={{ height: `${height}%` }} />
                 ))}
@@ -285,19 +285,19 @@ function PhonePreview() {
 
 function HeroSection() {
   return (
-    <section id="inicio" className="relative overflow-hidden pt-32 sm:pt-36">
-      <div className="absolute -left-24 top-16 h-80 w-80 rounded-full bg-[#FCE8F2] blur-3xl" />
-      <div className="absolute right-0 top-28 h-96 w-96 rounded-full bg-[#F4E9FF] blur-3xl" />
-      <div className="mx-auto grid max-w-7xl items-center gap-14 px-4 pb-20 sm:px-6 lg:grid-cols-[1.02fr_0.98fr] lg:px-8 lg:pb-28">
+    <section id="inicio" className="relative overflow-hidden pt-28 sm:pt-36">
+      <div className="absolute -left-24 top-16 h-64 w-64 rounded-full bg-[#FCE8F2] blur-3xl sm:h-80 sm:w-80" />
+      <div className="absolute right-0 top-28 h-72 w-72 rounded-full bg-[#F4E9FF] blur-3xl sm:h-96 sm:w-96" />
+      <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 pb-14 sm:px-6 sm:pb-20 lg:grid-cols-[1.02fr_0.98fr] lg:px-8 lg:pb-28">
         <div className="relative z-10 text-center lg:text-left">
-          <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/70 px-4 py-2 text-sm font-bold text-[#D92D7D] shadow-sm backdrop-blur-xl lg:mx-0">
+          <div className="mx-auto inline-flex max-w-full items-center gap-2 rounded-full border border-white/70 bg-white/70 px-4 py-2 text-xs font-bold text-[#D92D7D] shadow-sm backdrop-blur-xl sm:text-sm lg:mx-0">
             <Sparkles size={16} />
             Finanças a dois, sem complicação
           </div>
-          <h1 className="mt-6 text-5xl font-extrabold leading-[1.02] tracking-normal text-[#101828] sm:text-6xl lg:text-7xl">
+          <h1 className="mt-6 text-[2.45rem] font-extrabold leading-[1.03] tracking-normal text-[#101828] min-[390px]:text-[2.75rem] sm:text-6xl lg:text-7xl">
             Organizem a vida financeira do casal em um <span className="bg-gradient-to-r from-[#EC3E92] to-[#9B5CFF] bg-clip-text text-transparent">só lugar.</span>
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg font-medium leading-8 text-[#667085] lg:mx-0">
+          <p className="mx-auto mt-5 max-w-2xl text-base font-medium leading-7 text-[#667085] sm:mt-6 sm:text-lg sm:leading-8 lg:mx-0">
             Controle gastos, divida responsabilidades, acompanhe metas e construa planos juntos com clareza e tranquilidade.
           </p>
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
@@ -344,10 +344,10 @@ function QuickProof() {
 
 function FeatureGrid() {
   return (
-    <section id="recursos" className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+    <section id="recursos" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
       <div className="mx-auto max-w-3xl text-center">
-        <h2 className="text-4xl font-extrabold text-[#101828] sm:text-5xl">Tudo o que vocês precisam para cuidar melhor do dinheiro</h2>
-        <p className="mt-5 text-lg font-medium leading-8 text-[#667085]">Uma visão simples, compartilhada e organizada da vida financeira do casal.</p>
+        <h2 className="text-3xl font-extrabold text-[#101828] sm:text-5xl">Tudo o que vocês precisam para cuidar melhor do dinheiro</h2>
+        <p className="mt-4 text-base font-medium leading-7 text-[#667085] sm:mt-5 sm:text-lg sm:leading-8">Uma visão simples, compartilhada e organizada da vida financeira do casal.</p>
       </div>
       <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
         {features.map(({ title, text, icon: Icon }) => (
@@ -366,12 +366,12 @@ function FeatureGrid() {
 
 function DashboardMockup() {
   return (
-    <div className="relative rounded-[2.5rem] border border-white/80 bg-white/80 p-4 shadow-[0_30px_100px_rgba(16,24,40,0.12)] backdrop-blur-xl">
-      <div className="rounded-[2rem] bg-[#F8FAFC] p-4 sm:p-6">
+    <div className="relative rounded-[1.75rem] border border-white/80 bg-white/80 p-2 shadow-[0_30px_100px_rgba(16,24,40,0.12)] backdrop-blur-xl sm:rounded-[2.5rem] sm:p-4">
+      <div className="rounded-[1.35rem] bg-[#F8FAFC] p-3 sm:rounded-[2rem] sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-sm font-bold text-[#667085]">Dashboard FinCouple</p>
-            <h3 className="text-2xl font-extrabold text-[#101828]">Junho de 2026</h3>
+            <h3 className="text-xl font-extrabold text-[#101828] sm:text-2xl">Junho de 2026</h3>
           </div>
           <div className="flex gap-2">
             <span className="rounded-full bg-white px-4 py-2 text-sm font-bold text-[#667085]">Guto</span>
@@ -387,7 +387,7 @@ function DashboardMockup() {
             <div key={label as string} className="rounded-3xl bg-white p-5 shadow-sm">
               <Icon className="text-[#EC3E92]" size={22} />
               <p className="mt-4 text-sm font-bold text-[#667085]">{label as string}</p>
-              <p className="mt-1 text-2xl font-extrabold text-[#101828]">{value as string}</p>
+              <p className="mt-1 text-xl font-extrabold text-[#101828] sm:text-2xl">{value as string}</p>
             </div>
           ))}
         </div>
@@ -397,7 +397,7 @@ function DashboardMockup() {
               <h4 className="font-extrabold text-[#101828]">Gráfico mensal</h4>
               <BarChart3 className="text-[#EC3E92]" />
             </div>
-            <div className="mt-6 flex h-48 items-end gap-3">
+            <div className="mt-5 flex h-32 items-end gap-2 sm:h-48 sm:gap-3">
               {[38, 52, 44, 78, 66, 90, 58, 72, 62, 84].map((height, index) => (
                 <span key={index} className="flex-1 rounded-t-2xl bg-gradient-to-t from-[#EC3E92] to-[#F4E9FF]" style={{ height: `${height}%` }} />
               ))}
@@ -437,12 +437,12 @@ function DashboardMockup() {
 
 function DashboardShowcase() {
   return (
-    <section className="relative overflow-hidden px-4 py-24 sm:px-6 lg:px-8">
+    <section className="relative overflow-hidden px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
       <div className="absolute inset-x-0 top-16 mx-auto h-96 max-w-5xl rounded-full bg-[#F4E9FF]/70 blur-3xl" />
       <div className="relative mx-auto max-w-7xl">
         <div className="mx-auto max-w-3xl text-center">
-          <h2 className="text-4xl font-extrabold text-[#101828] sm:text-5xl">Toda a vida financeira em uma única visão</h2>
-          <p className="mt-5 text-lg font-medium leading-8 text-[#667085]">Acompanhem gastos, receitas, metas, contas e contribuições sem planilhas complicadas.</p>
+          <h2 className="text-3xl font-extrabold text-[#101828] sm:text-5xl">Toda a vida financeira em uma única visão</h2>
+          <p className="mt-4 text-base font-medium leading-7 text-[#667085] sm:mt-5 sm:text-lg sm:leading-8">Acompanhem gastos, receitas, metas, contas e contribuições sem planilhas complicadas.</p>
         </div>
         <div className="relative mt-12">
           <DashboardMockup />
@@ -462,9 +462,9 @@ function HowItWorks() {
   ] as const
 
   return (
-    <section id="como-funciona" className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+    <section id="como-funciona" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
       <div className="text-center">
-        <h2 className="text-4xl font-extrabold text-[#101828] sm:text-5xl">Começar é simples</h2>
+        <h2 className="text-3xl font-extrabold text-[#101828] sm:text-5xl">Começar é simples</h2>
       </div>
       <div className="relative mt-12 grid gap-5 lg:grid-cols-3">
         <div className="absolute left-[16%] right-[16%] top-14 hidden h-px bg-gradient-to-r from-transparent via-pink-200 to-transparent lg:block" />
@@ -485,7 +485,7 @@ function HowItWorks() {
 
 function CoupleArt() {
   return (
-    <svg className="mx-auto h-72 w-full max-w-md" viewBox="0 0 420 300" fill="none" aria-label="Ilustração de casal planejando juntos" role="img">
+    <svg className="mx-auto h-56 w-full max-w-md sm:h-72" viewBox="0 0 420 300" fill="none" aria-label="Ilustração de casal planejando juntos" role="img">
       <path d="M28 245C45 184 91 154 166 156C243 159 292 190 322 245H28Z" fill="#FCE8F2" />
       <circle cx="169" cy="115" r="38" fill="#D95C9A" />
       <circle cx="239" cy="119" r="40" fill="#F09BC6" />
@@ -501,14 +501,14 @@ function CoupleArt() {
 function CoupleBenefits() {
   const checks = ['visualização compartilhada', 'responsabilidades bem definidas', 'menos esquecimentos', 'planejamento de curto e longo prazo', 'acompanhamento de objetivos', 'histórico organizado']
   return (
-    <section id="casais" className="bg-gradient-to-br from-[#FFF1F8] to-[#F4E9FF] px-4 py-24 sm:px-6 lg:px-8">
+    <section id="casais" className="bg-gradient-to-br from-[#FFF1F8] to-[#F4E9FF] px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
       <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2">
-        <div className="rounded-[2.5rem] border border-white/70 bg-white/38 p-8 backdrop-blur-xl">
+        <div className="rounded-[1.75rem] border border-white/70 bg-white/38 p-4 backdrop-blur-xl sm:rounded-[2.5rem] sm:p-8">
           <CoupleArt />
         </div>
         <div>
-          <h2 className="text-4xl font-extrabold leading-tight text-[#101828] sm:text-5xl">Mais transparência. Menos discussões. Mais planos juntos.</h2>
-          <p className="mt-5 text-lg font-medium leading-8 text-[#667085]">O FinCouple ajuda o casal a conversar sobre dinheiro com mais clareza, organização e parceria.</p>
+          <h2 className="text-3xl font-extrabold leading-tight text-[#101828] sm:text-5xl">Mais transparência. Menos discussões. Mais planos juntos.</h2>
+          <p className="mt-4 text-base font-medium leading-7 text-[#667085] sm:mt-5 sm:text-lg sm:leading-8">O FinCouple ajuda o casal a conversar sobre dinheiro com mais clareza, organização e parceria.</p>
           <div className="mt-8 grid gap-3 sm:grid-cols-2">
             {checks.map((item) => (
               <div key={item} className="flex items-center gap-3 rounded-2xl bg-white/62 px-4 py-3 font-bold text-[#101828]">
@@ -531,9 +531,9 @@ function SecuritySection() {
     ['Controle do casal', 'Somente os participantes vinculados podem visualizar as informações compartilhadas.'],
   ]
   return (
-    <section id="seguranca" className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+    <section id="seguranca" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
       <div className="mx-auto max-w-3xl text-center">
-        <h2 className="text-4xl font-extrabold text-[#101828] sm:text-5xl">Privacidade e segurança em primeiro lugar</h2>
+        <h2 className="text-3xl font-extrabold text-[#101828] sm:text-5xl">Privacidade e segurança em primeiro lugar</h2>
       </div>
       <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
         {cards.map(([title, text]) => (
@@ -550,10 +550,10 @@ function SecuritySection() {
 
 function Testimonials() {
   return (
-    <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8" aria-label="Depoimentos demonstrativos">
+    <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8" aria-label="Depoimentos demonstrativos">
       <div className="mx-auto max-w-3xl text-center">
         <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-[#EC3E92]">Dados de apresentação</p>
-        <h2 className="mt-3 text-4xl font-extrabold text-[#101828] sm:text-5xl">Casais organizando planos com mais clareza</h2>
+        <h2 className="mt-3 text-3xl font-extrabold text-[#101828] sm:text-5xl">Casais organizando planos com mais clareza</h2>
       </div>
       <div className="mt-12 grid gap-5 md:grid-cols-3">
         {presentationTestimonials.map((testimonial) => (
@@ -572,12 +572,12 @@ function Testimonials() {
 
 function FinalCTA() {
   return (
-    <section className="px-4 py-24 sm:px-6 lg:px-8">
-      <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[3rem] bg-gradient-to-br from-[#EC3E92] via-[#E95AA4] to-[#B98BFF] px-6 py-16 text-center text-white shadow-[0_30px_100px_rgba(236,62,146,0.24)] sm:px-12">
+    <section className="px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+      <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#EC3E92] via-[#E95AA4] to-[#B98BFF] px-5 py-12 text-center text-white shadow-[0_30px_100px_rgba(236,62,146,0.24)] sm:rounded-[3rem] sm:px-12 sm:py-16">
         <Heart className="absolute left-10 top-10 text-white/20" size={70} fill="currentColor" />
         <Sparkles className="absolute bottom-12 right-16 text-white/30" size={54} />
-        <h2 className="mx-auto max-w-3xl text-4xl font-extrabold leading-tight sm:text-5xl">Comecem hoje a organizar a vida financeira de vocês</h2>
-        <p className="mx-auto mt-5 max-w-2xl text-lg font-medium leading-8 text-white/82">Criem a conta, conectem o casal e acompanhem tudo em um único lugar.</p>
+        <h2 className="mx-auto max-w-3xl text-3xl font-extrabold leading-tight sm:text-5xl">Comecem hoje a organizar a vida financeira de vocês</h2>
+        <p className="mx-auto mt-4 max-w-2xl text-base font-medium leading-7 text-white/82 sm:mt-5 sm:text-lg sm:leading-8">Criem a conta, conectem o casal e acompanhem tudo em um único lugar.</p>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <Link to="/cadastro" className="inline-flex min-h-12 items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-extrabold text-[#D92D7D] transition hover:-translate-y-0.5">
             Criar conta gratuitamente

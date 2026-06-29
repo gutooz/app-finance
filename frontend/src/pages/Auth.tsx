@@ -120,7 +120,7 @@ export default function Auth({ initialMode = 'login' }: { initialMode?: Mode }) 
   const handleSubmit = () => (mode === 'login' ? handleLogin() : handleRegister())
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#FFF8FC] px-4 py-8 text-[#101828] sm:px-6 lg:px-8">
+    <main className="relative min-h-screen overflow-x-hidden bg-[#FFF8FC] px-3 py-5 text-[#101828] sm:px-6 sm:py-8 lg:px-8">
       <div className="absolute -left-32 -top-44 h-[430px] w-[560px] rounded-[48%] bg-pink-200/45 blur-sm" />
       <div className="absolute -right-32 bottom-0 h-[420px] w-[600px] rounded-[52%_48%_0_0] bg-[#F4E9FF]/90" />
       <div className="absolute right-0 top-[42%] hidden h-56 w-[44vw] rounded-l-full bg-white/45 lg:block" />
@@ -133,21 +133,21 @@ export default function Auth({ initialMode = 'login' }: { initialMode?: Mode }) 
 
       <CoupleIllustration />
 
-      <section className="relative z-10 mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-5xl flex-col items-center justify-center">
-        <header className="mb-6 text-center sm:mb-7">
+      <section className="relative z-10 mx-auto flex min-h-[calc(100svh-2.5rem)] w-full max-w-5xl flex-col items-center justify-center">
+        <header className="mb-5 text-center sm:mb-7">
           <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-[1.55rem] bg-gradient-to-br from-[#FF3C9A] to-[#D92D7D] shadow-[0_18px_35px_rgba(217,45,125,0.24)] sm:h-24 sm:w-24">
             <Heart className="h-10 w-10 text-white sm:h-12 sm:w-12" fill="white" strokeWidth={1.5} />
           </div>
-          <h1 className="text-5xl font-extrabold leading-none tracking-normal text-[#101828] sm:text-6xl">
+          <h1 className="text-4xl font-extrabold leading-none tracking-normal text-[#101828] sm:text-6xl">
             FinCouple
           </h1>
-          <p className="mt-4 text-lg font-medium text-[#667085] sm:text-xl">
+          <p className="mt-3 text-base font-medium text-[#667085] sm:mt-4 sm:text-xl">
             Finanças para <span className="font-bold text-[#EC3E92]">casais</span>, sem complicação
           </p>
         </header>
 
-        <div className="w-full max-w-[680px] rounded-[2rem] border border-white/80 bg-white/95 p-5 shadow-[0_24px_80px_rgba(16,24,40,0.10)] backdrop-blur sm:p-8 md:p-10">
-          <div className="mb-8 grid grid-cols-2 rounded-[1.35rem] bg-[#F3F4F7] p-1.5">
+        <div className="w-full max-w-[680px] rounded-[1.5rem] border border-white/80 bg-white/95 p-4 shadow-[0_24px_80px_rgba(16,24,40,0.10)] backdrop-blur sm:rounded-[2rem] sm:p-8 md:p-10">
+          <div className="mb-6 grid grid-cols-2 rounded-[1.15rem] bg-[#F3F4F7] p-1.5 sm:mb-8 sm:rounded-[1.35rem]">
             {(['login', 'register'] as Mode[]).map((item) => {
               const active = mode === item
               return (
@@ -158,7 +158,7 @@ export default function Auth({ initialMode = 'login' }: { initialMode?: Mode }) 
                     setMode(item)
                     setError('')
                   }}
-                  className={`h-14 rounded-[1.1rem] text-base font-bold transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-200 sm:text-lg ${
+                  className={`h-12 rounded-[1rem] text-sm font-bold transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-200 sm:h-14 sm:rounded-[1.1rem] sm:text-lg ${
                     active
                       ? 'border border-pink-200 bg-white text-[#D92D7D] shadow-[0_10px_24px_rgba(236,62,146,0.10)]'
                       : 'text-[#667085] hover:text-[#101828]'
@@ -172,7 +172,7 @@ export default function Auth({ initialMode = 'login' }: { initialMode?: Mode }) 
           </div>
 
           <form
-            className="space-y-6"
+            className="space-y-5 sm:space-y-6"
             onSubmit={(event) => {
               event.preventDefault()
               handleSubmit()
@@ -185,10 +185,10 @@ export default function Auth({ initialMode = 'login' }: { initialMode?: Mode }) 
                     Seu nome
                   </label>
                   <div className="relative">
-                    <User className="pointer-events-none absolute left-6 top-1/2 h-6 w-6 -translate-y-1/2 text-[#EC3E92]" />
+                    <User className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#EC3E92] sm:left-6 sm:h-6 sm:w-6" />
                     <input
                       id="name"
-                      className="h-[58px] w-full rounded-[1.15rem] border border-[#DDE1E8] bg-white pl-16 pr-5 text-lg text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-[#EC3E92] focus:ring-4 focus:ring-pink-100"
+                      className="min-h-[52px] w-full rounded-[1rem] border border-[#DDE1E8] bg-white py-3 pl-12 pr-4 text-base text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-[#EC3E92] focus:ring-4 focus:ring-pink-100 sm:min-h-[58px] sm:rounded-[1.15rem] sm:pl-16 sm:pr-5 sm:text-lg"
                       placeholder="Ex: Isabella"
                       value={name}
                       onChange={(event) => setName(event.target.value)}
@@ -224,10 +224,10 @@ export default function Auth({ initialMode = 'login' }: { initialMode?: Mode }) 
                 Email
               </label>
               <div className="relative">
-                <Mail className="pointer-events-none absolute left-6 top-1/2 h-6 w-6 -translate-y-1/2 text-[#EC3E92]" />
+                <Mail className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#EC3E92] sm:left-6 sm:h-6 sm:w-6" />
                 <input
                   id="email"
-                  className="h-[58px] w-full rounded-[1.15rem] border border-[#DDE1E8] bg-white pl-16 pr-5 text-lg text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-[#EC3E92] focus:ring-4 focus:ring-pink-100"
+                  className="min-h-[52px] w-full rounded-[1rem] border border-[#DDE1E8] bg-white py-3 pl-12 pr-4 text-base text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-[#EC3E92] focus:ring-4 focus:ring-pink-100 sm:min-h-[58px] sm:rounded-[1.15rem] sm:pl-16 sm:pr-5 sm:text-lg"
                   type="email"
                   placeholder="seu@email.com"
                   value={email}
@@ -243,10 +243,10 @@ export default function Auth({ initialMode = 'login' }: { initialMode?: Mode }) 
                 Senha
               </label>
               <div className="relative">
-                <Lock className="pointer-events-none absolute left-6 top-1/2 h-6 w-6 -translate-y-1/2 text-[#EC3E92]" />
+                <Lock className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#EC3E92] sm:left-6 sm:h-6 sm:w-6" />
                 <input
                   id="password"
-                  className="h-[58px] w-full rounded-[1.15rem] border border-[#DDE1E8] bg-white pl-16 pr-16 text-lg text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-[#EC3E92] focus:ring-4 focus:ring-pink-100"
+                  className="min-h-[52px] w-full rounded-[1rem] border border-[#DDE1E8] bg-white py-3 pl-12 pr-14 text-base text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-[#EC3E92] focus:ring-4 focus:ring-pink-100 sm:min-h-[58px] sm:rounded-[1.15rem] sm:pl-16 sm:pr-16 sm:text-lg"
                   type={showPass ? 'text' : 'password'}
                   placeholder="Mínimo 6 caracteres"
                   value={password}
@@ -258,7 +258,7 @@ export default function Auth({ initialMode = 'login' }: { initialMode?: Mode }) 
                 <button
                   type="button"
                   onClick={() => setShowPass((value) => !value)}
-                  className="absolute right-5 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-[#98A2B3] transition hover:bg-pink-50 hover:text-[#EC3E92] focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-200"
+                  className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-[#98A2B3] transition hover:bg-pink-50 hover:text-[#EC3E92] focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-200 sm:right-5"
                   aria-label={showPass ? 'Ocultar senha' : 'Mostrar senha'}
                 >
                   {showPass ? <EyeOff size={22} /> : <Eye size={22} />}
@@ -272,10 +272,10 @@ export default function Auth({ initialMode = 'login' }: { initialMode?: Mode }) 
                   Sua renda mensal <span className="font-medium text-[#667085]">(opcional)</span>
                 </label>
                 <div className="relative">
-                  <BadgeDollarSign className="pointer-events-none absolute left-6 top-1/2 h-6 w-6 -translate-y-1/2 text-[#EC3E92]" />
+                  <BadgeDollarSign className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#EC3E92] sm:left-6 sm:h-6 sm:w-6" />
                   <input
                     id="income"
-                    className="h-[58px] w-full rounded-[1.15rem] border border-[#DDE1E8] bg-white pl-16 pr-5 text-lg text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-[#EC3E92] focus:ring-4 focus:ring-pink-100"
+                    className="min-h-[52px] w-full rounded-[1rem] border border-[#DDE1E8] bg-white py-3 pl-12 pr-4 text-base text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-[#EC3E92] focus:ring-4 focus:ring-pink-100 sm:min-h-[58px] sm:rounded-[1.15rem] sm:pl-16 sm:pr-5 sm:text-lg"
                     placeholder="0,00"
                     type="number"
                     value={income}
@@ -295,7 +295,7 @@ export default function Auth({ initialMode = 'login' }: { initialMode?: Mode }) 
             )}
 
             <button
-              className="mt-2 flex h-[58px] w-full items-center justify-center rounded-[1.15rem] bg-gradient-to-r from-[#FF2F92] to-[#D92D7D] text-xl font-extrabold text-white shadow-[0_16px_30px_rgba(236,62,146,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_36px_rgba(236,62,146,0.30)] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
+              className="mt-2 flex min-h-[52px] w-full items-center justify-center rounded-[1rem] bg-gradient-to-r from-[#FF2F92] to-[#D92D7D] py-3 text-lg font-extrabold text-white shadow-[0_16px_30px_rgba(236,62,146,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_36px_rgba(236,62,146,0.30)] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none sm:min-h-[58px] sm:rounded-[1.15rem] sm:text-xl"
               type="submit"
               disabled={loading || !email || !password}
               aria-busy={loading}
