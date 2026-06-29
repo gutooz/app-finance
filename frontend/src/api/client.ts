@@ -1,8 +1,16 @@
 import axios from 'axios'
 import { useStore } from '../store/useStore'
 
+const configuredApiUrl = import.meta.env.VITE_API_URL || ''
+const isLocalApiUrl = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(configuredApiUrl)
+const apiBaseURL = import.meta.env.DEV
+  ? configuredApiUrl || 'http://localhost:8000'
+  : isLocalApiUrl
+    ? ''
+    : configuredApiUrl
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8000' : ''),
+  baseURL: apiBaseURL,
 })
 
 // Attach JWT to every request, reading from the persisted store
