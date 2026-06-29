@@ -2,8 +2,14 @@ fastapi==0.115.0
 uvicorn[standard]==0.30.6
 python-dotenv==1.0.1
 pydantic==2.9.2
+email-validator==2.2.0
 python-multipart==0.0.12
 python-telegram-bot==20.8
 httpx~=0.26.0
 supabase==2.10.0
 nest_asyncio==1.6.0
+pymongo==4.10.1
+python-jose[cryptography]==3.3.0
+bcrypt==4.2.0
+SQLAlchemy==2.0.35
+aiosqlite==0.20.0
