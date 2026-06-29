@@ -1,10 +1,62 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Heart, Eye, EyeOff } from 'lucide-react'
+import {
+  BadgeDollarSign,
+  Eye,
+  EyeOff,
+  Heart,
+  Lock,
+  Mail,
+  ShieldCheck,
+  User,
+} from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { loginUser, registerUser } from '../api/client'
 
 type Mode = 'login' | 'register'
+
+function getErrorMessage(error: unknown, fallback: string) {
+  if (typeof error === 'object' && error && 'response' in error) {
+    const response = (error as { response?: { data?: { detail?: string } } }).response
+    if (response?.data?.detail) return response.data.detail
+  }
+  if (error instanceof Error) return error.message
+  return fallback
+}
+
+function CoupleIllustration() {
+  return (
+    <svg
+      className="pointer-events-none absolute bottom-0 left-0 hidden h-[420px] w-[520px] text-pink-300 opacity-70 lg:block"
+      viewBox="0 0 520 420"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path d="M0 350H520V420H0V350Z" fill="#FCE8F2" />
+      <path d="M20 260H45V350H20V260Z" fill="#F9D8EA" opacity=".45" />
+      <path d="M62 238H92V350H62V238Z" fill="#F9D8EA" opacity=".42" />
+      <path d="M118 225H160V350H118V225Z" fill="#F7CBE4" opacity=".36" />
+      <path d="M186 202H230V350H186V202Z" fill="#F2BADA" opacity=".34" />
+      <path d="M260 244H300V350H260V244Z" fill="#F8D8EA" opacity=".38" />
+      <path d="M330 270H370V350H330V270Z" fill="#F8D8EA" opacity=".35" />
+      <path d="M120 349C137 302 163 281 199 286C236 292 260 317 274 349H120Z" fill="#F3B5D7" />
+      <path d="M216 349C224 304 244 280 277 281C314 282 338 310 354 349H216Z" fill="#F7C3DE" />
+      <circle cx="205" cy="244" r="32" fill="#D95C9A" />
+      <path d="M178 245C186 217 206 204 231 212C238 238 226 259 197 270C188 264 181 256 178 245Z" fill="#C94788" />
+      <circle cx="281" cy="253" r="34" fill="#F09BC6" />
+      <path d="M250 253C258 222 280 209 307 219C320 244 310 272 275 290C261 282 253 270 250 253Z" fill="#EA82B8" />
+      <path d="M222 297C254 296 283 313 305 348H190C195 318 205 302 222 297Z" fill="#FFE4F1" />
+      <path d="M287 302C322 308 344 325 361 349H242C247 322 262 306 287 302Z" fill="#FFD4EA" />
+      <path d="M228 295C248 310 275 314 308 307" stroke="#C94788" strokeWidth="18" strokeLinecap="round" />
+      <path d="M74 350C73 316 83 291 105 274" stroke="#F3A7CD" strokeWidth="8" strokeLinecap="round" />
+      <path d="M75 324C45 317 31 299 31 271C58 276 73 294 75 324Z" fill="#F4B4D5" opacity=".8" />
+      <path d="M81 306C98 280 116 270 136 275C129 300 111 312 81 306Z" fill="#F4B4D5" opacity=".75" />
+      <path d="M66 292C47 271 42 250 51 230C73 244 78 265 66 292Z" fill="#F4B4D5" opacity=".7" />
+      <path d="M48 350H112L105 395H56L48 350Z" fill="#FFEAF4" />
+      <path d="M55 350H105" stroke="#F2A9CC" strokeWidth="6" strokeLinecap="round" />
+    </svg>
+  )
+}
 
 export default function Auth() {
   const navigate = useNavigate()
@@ -21,24 +73,32 @@ export default function Auth() {
   const [error, setError] = useState('')
 
   const handleLogin = async () => {
-    setLoading(true); setError('')
+    setLoading(true)
+    setError('')
     try {
       const data = await loginUser({ email, password })
       setSession({ access_token: data.session.access_token, user: data.user })
       if (data.profile) setProfile(data.profile)
       if (data.couple) setCouple(data.couple)
       navigate(data.couple ? '/dashboard' : '/setup')
-    } catch (e: any) {
-      setError(e.response?.data?.detail || e.message || 'Email ou senha incorretos')
+    } catch (error: unknown) {
+      setError(getErrorMessage(error, 'Email ou senha incorretos'))
     } finally {
       setLoading(false)
     }
   }
 
   const handleRegister = async () => {
-    if (!name.trim()) { setError('Digite seu nome'); return }
-    if (password.length < 6) { setError('Senha deve ter ao menos 6 caracteres'); return }
-    setLoading(true); setError('')
+    if (!name.trim()) {
+      setError('Digite seu nome')
+      return
+    }
+    if (password.length < 6) {
+      setError('Senha deve ter ao menos 6 caracteres')
+      return
+    }
+    setLoading(true)
+    setError('')
     try {
       const data = await registerUser({
         email,
@@ -49,124 +109,207 @@ export default function Auth() {
       })
       setSession({ access_token: data.session.access_token, user: data.user })
       navigate('/setup')
-    } catch (e: any) {
-      const detail = e.response?.data?.detail || e.message
-      setError(detail?.includes('ja cadastrado') ? 'Este email ja esta cadastrado. Faca login.' : detail)
+    } catch (error: unknown) {
+      const detail = getErrorMessage(error, 'Não foi possível criar sua conta')
+      setError(detail?.includes('ja cadastrado') ? 'Este email ja está cadastrado. Faça login.' : detail)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleSubmit = () => mode === 'login' ? handleLogin() : handleRegister()
-
-  const authThemeClass = mode === 'register' && gender === 'male' ? 'theme-male' : ''
+  const handleSubmit = () => (mode === 'login' ? handleLogin() : handleRegister())
 
   return (
-    <div className={`${authThemeClass} min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex flex-col items-center justify-center px-6`}>
-      <div className="mb-8 text-center">
-        <div className="w-16 h-16 bg-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg">
-          <Heart className="text-white" size={32} fill="white" />
-        </div>
-        <h1 className="text-2xl font-bold text-gray-900">FinCouple</h1>
-        <p className="text-gray-500 text-sm">Financas para casais, sem complicacao</p>
+    <main className="relative min-h-screen overflow-hidden bg-[#FFF8FC] px-4 py-8 text-[#101828] sm:px-6 lg:px-8">
+      <div className="absolute -left-32 -top-44 h-[430px] w-[560px] rounded-[48%] bg-pink-200/45 blur-sm" />
+      <div className="absolute -right-32 bottom-0 h-[420px] w-[600px] rounded-[52%_48%_0_0] bg-[#F4E9FF]/90" />
+      <div className="absolute right-0 top-[42%] hidden h-56 w-[44vw] rounded-l-full bg-white/45 lg:block" />
+      <div className="absolute right-[14%] top-24 hidden text-[#EC3E92]/25 md:block">
+        <Heart size={54} fill="currentColor" />
+      </div>
+      <div className="absolute right-[20%] top-36 hidden text-[#EC3E92]/30 md:block">
+        <Heart size={34} fill="currentColor" />
       </div>
 
-      <div className="w-full max-w-sm bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
-        <div className="flex bg-gray-100 rounded-2xl p-1 mb-6">
-          {(['login', 'register'] as Mode[]).map((m) => (
-            <button
-              key={m}
-              onClick={() => { setMode(m); setError('') }}
-              className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
-                mode === m ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
-              }`}
-            >
-              {m === 'login' ? 'Entrar' : 'Criar conta'}
-            </button>
-          ))}
-        </div>
+      <CoupleIllustration />
 
-        <div className="space-y-4">
-          {mode === 'register' && (
-            <>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Seu nome</label>
-                <input className="input" placeholder="Ex: Isabella" value={name} onChange={e => setName(e.target.value)} />
+      <section className="relative z-10 mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-5xl flex-col items-center justify-center">
+        <header className="mb-6 text-center sm:mb-7">
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-[1.55rem] bg-gradient-to-br from-[#FF3C9A] to-[#D92D7D] shadow-[0_18px_35px_rgba(217,45,125,0.24)] sm:h-24 sm:w-24">
+            <Heart className="h-10 w-10 text-white sm:h-12 sm:w-12" fill="white" strokeWidth={1.5} />
+          </div>
+          <h1 className="text-5xl font-extrabold leading-none tracking-normal text-[#101828] sm:text-6xl">
+            FinCouple
+          </h1>
+          <p className="mt-4 text-lg font-medium text-[#667085] sm:text-xl">
+            Finanças para <span className="font-bold text-[#EC3E92]">casais</span>, sem complicação
+          </p>
+        </header>
+
+        <div className="w-full max-w-[680px] rounded-[2rem] border border-white/80 bg-white/95 p-5 shadow-[0_24px_80px_rgba(16,24,40,0.10)] backdrop-blur sm:p-8 md:p-10">
+          <div className="mb-8 grid grid-cols-2 rounded-[1.35rem] bg-[#F3F4F7] p-1.5">
+            {(['login', 'register'] as Mode[]).map((item) => {
+              const active = mode === item
+              return (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => {
+                    setMode(item)
+                    setError('')
+                  }}
+                  className={`h-14 rounded-[1.1rem] text-base font-bold transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-200 sm:text-lg ${
+                    active
+                      ? 'border border-pink-200 bg-white text-[#D92D7D] shadow-[0_10px_24px_rgba(236,62,146,0.10)]'
+                      : 'text-[#667085] hover:text-[#101828]'
+                  }`}
+                  aria-pressed={active}
+                >
+                  {item === 'login' ? 'Entrar' : 'Criar conta'}
+                </button>
+              )
+            })}
+          </div>
+
+          <form
+            className="space-y-6"
+            onSubmit={(event) => {
+              event.preventDefault()
+              handleSubmit()
+            }}
+          >
+            {mode === 'register' && (
+              <>
+                <div>
+                  <label htmlFor="name" className="mb-2 block text-base font-bold text-[#101828]">
+                    Seu nome
+                  </label>
+                  <div className="relative">
+                    <User className="pointer-events-none absolute left-6 top-1/2 h-6 w-6 -translate-y-1/2 text-[#EC3E92]" />
+                    <input
+                      id="name"
+                      className="h-[58px] w-full rounded-[1.15rem] border border-[#DDE1E8] bg-white pl-16 pr-5 text-lg text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-[#EC3E92] focus:ring-4 focus:ring-pink-100"
+                      placeholder="Ex: Isabella"
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
+                      autoComplete="name"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <span className="mb-2 block text-base font-bold text-[#101828]">Perfil</span>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[{ value: 'female' as const, label: 'Mulher' }, { value: 'male' as const, label: 'Homem' }].map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setGender(option.value)}
+                        className={`h-12 rounded-2xl border px-4 text-sm font-bold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-200 ${
+                          gender === option.value
+                            ? 'border-[#EC3E92] bg-[#FCE8F2] text-[#D92D7D]'
+                            : 'border-[#DDE1E8] bg-white text-[#667085] hover:border-pink-200'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            <div>
+              <label htmlFor="email" className="mb-2 block text-base font-bold text-[#101828]">
+                Email
+              </label>
+              <div className="relative">
+                <Mail className="pointer-events-none absolute left-6 top-1/2 h-6 w-6 -translate-y-1/2 text-[#EC3E92]" />
+                <input
+                  id="email"
+                  className="h-[58px] w-full rounded-[1.15rem] border border-[#DDE1E8] bg-white pl-16 pr-5 text-lg text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-[#EC3E92] focus:ring-4 focus:ring-pink-100"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  autoComplete="email"
+                  required
+                />
               </div>
+            </div>
+
+            <div>
+              <label htmlFor="password" className="mb-2 block text-base font-bold text-[#101828]">
+                Senha
+              </label>
+              <div className="relative">
+                <Lock className="pointer-events-none absolute left-6 top-1/2 h-6 w-6 -translate-y-1/2 text-[#EC3E92]" />
+                <input
+                  id="password"
+                  className="h-[58px] w-full rounded-[1.15rem] border border-[#DDE1E8] bg-white pl-16 pr-16 text-lg text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-[#EC3E92] focus:ring-4 focus:ring-pink-100"
+                  type={showPass ? 'text' : 'password'}
+                  placeholder="Mínimo 6 caracteres"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                  minLength={mode === 'register' ? 6 : undefined}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPass((value) => !value)}
+                  className="absolute right-5 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-[#98A2B3] transition hover:bg-pink-50 hover:text-[#EC3E92] focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-200"
+                  aria-label={showPass ? 'Ocultar senha' : 'Mostrar senha'}
+                >
+                  {showPass ? <EyeOff size={22} /> : <Eye size={22} />}
+                </button>
+              </div>
+            </div>
+
+            {mode === 'register' && (
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Perfil</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[{ value: 'female' as const, label: 'Mulher' }, { value: 'male' as const, label: 'Homem' }].map(opt => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => setGender(opt.value)}
-                      className={`rounded-xl border px-3 py-2 text-sm font-semibold transition-colors ${
-                        gender === opt.value ? 'border-pink-500 bg-pink-50 text-pink-600' : 'border-gray-200 text-gray-500 hover:border-pink-300'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
+                <label htmlFor="income" className="mb-2 block text-base font-bold text-[#101828]">
+                  Sua renda mensal <span className="font-medium text-[#667085]">(opcional)</span>
+                </label>
+                <div className="relative">
+                  <BadgeDollarSign className="pointer-events-none absolute left-6 top-1/2 h-6 w-6 -translate-y-1/2 text-[#EC3E92]" />
+                  <input
+                    id="income"
+                    className="h-[58px] w-full rounded-[1.15rem] border border-[#DDE1E8] bg-white pl-16 pr-5 text-lg text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-[#EC3E92] focus:ring-4 focus:ring-pink-100"
+                    placeholder="0,00"
+                    type="number"
+                    value={income}
+                    onChange={(event) => setIncome(event.target.value)}
+                    min="0"
+                    step="0.01"
+                    inputMode="decimal"
+                  />
                 </div>
               </div>
-            </>
-          )}
+            )}
 
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Email</label>
-            <input
-              className="input"
-              type="email"
-              placeholder="seu@email.com"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-            />
-          </div>
+            {error && (
+              <p className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600" role="alert">
+                {error}
+              </p>
+            )}
 
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Senha</label>
-            <div className="relative">
-              <input
-                className="input pr-12"
-                type={showPass ? 'text' : 'password'}
-                placeholder="Minimo 6 caracteres"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-              />
-              <button type="button" onClick={() => setShowPass(v => !v)} className="absolute right-3 top-3 text-gray-400">
-                {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-          </div>
-
-          {mode === 'register' && (
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Sua renda mensal (opcional)</label>
-              <div className="relative">
-                <span className="absolute left-4 top-3 text-gray-400 text-sm font-medium">R$</span>
-                <input className="input pl-10" placeholder="0,00" type="number" value={income} onChange={e => setIncome(e.target.value)} />
-              </div>
-            </div>
-          )}
-
-          {error && (
-            <div className="bg-red-50 border border-red-100 text-red-600 text-sm px-3 py-2 rounded-xl">{error}</div>
-          )}
-
-          <button
-            className="btn-primary mt-2"
-            onClick={handleSubmit}
-            disabled={loading || !email || !password}
-          >
-            {loading ? '...' : mode === 'login' ? 'Entrar' : 'Criar conta'}
-          </button>
+            <button
+              className="mt-2 flex h-[58px] w-full items-center justify-center rounded-[1.15rem] bg-gradient-to-r from-[#FF2F92] to-[#D92D7D] text-xl font-extrabold text-white shadow-[0_16px_30px_rgba(236,62,146,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_36px_rgba(236,62,146,0.30)] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
+              type="submit"
+              disabled={loading || !email || !password}
+              aria-busy={loading}
+            >
+              {loading ? 'Aguarde...' : mode === 'login' ? 'Entrar' : 'Criar conta'}
+            </button>
+          </form>
         </div>
-      </div>
 
-      <p className="text-xs text-gray-400 mt-6">Seus dados sao privados e seguros</p>
-    </div>
+        <p className="mt-6 flex items-center justify-center gap-3 text-center text-base font-medium text-[#667085]">
+          <ShieldCheck className="h-7 w-7 text-[#EC3E92]" />
+          Seus dados são privados e seguros
+        </p>
+      </section>
+    </main>
   )
 }
