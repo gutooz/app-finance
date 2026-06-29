@@ -36,8 +36,8 @@ function App() {
     // Validate token and refresh profile/couple on page load
     getMe()
       .then(me => {
-        if (me.profile) setProfile(me.profile)
-        if (me.couple) setCouple(me.couple)
+        setProfile(me.profile || null)
+        setCouple(me.couple || null)
       })
       .catch(() => clear())
   }, []) // eslint-disable-line react-hooks/exhaustive-deps

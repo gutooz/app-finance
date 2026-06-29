@@ -54,6 +54,10 @@ export const useStore = create<AppStore>()(
       setCouple: (couple) => set({ couple }),
       clear: () => set({ session: null, profile: null, couple: null }),
     }),
-    { name: 'fincouple-store-v3' }
+    {
+      name: 'fincouple-store-v3',
+      version: 4,
+      migrate: () => ({ session: null, profile: null, couple: null }),
+    }
   )
 )
