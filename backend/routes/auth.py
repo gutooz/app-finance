@@ -51,14 +51,19 @@ def _clean_profile(doc: dict) -> dict:
 
 @router.post("/register")
 def register(data: RegisterIn):
-    if db.profiles.find_one({"email": data.email}):
+    email = data.email.lower()
+    if db.profiles.find_one({"email": email}):
         raise HTTPException(400, "Email ja cadastrado")
+    try:
+        password_hash = hash_password(data.password)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
     user_id = str(uuid.uuid4())
     normalized_gender = data.gender if data.gender in ("male", "female") else "female"
     db.profiles.insert_one({
         "_id": user_id,
-        "email": data.email,
-        "password_hash": hash_password(data.password),
+        "email": email,
+        "password_hash": password_hash,
         "name": data.name,
         "monthly_income": float(data.monthly_income),
         "gender": normalized_gender,
@@ -66,16 +71,16 @@ def register(data: RegisterIn):
         "status": "active",
         "created_at": datetime.utcnow(),
     })
-    token = create_access_token(user_id, data.email)
+    token = create_access_token(user_id, email)
     return {
-        "user": {"id": user_id, "email": data.email},
+        "user": {"id": user_id, "email": email},
         "session": {"access_token": token},
     }
 
 
 @router.post("/login")
 def login(data: LoginIn):
-    user = db.profiles.find_one({"email": data.email})
+    user = db.profiles.find_one({"email": data.email.lower()})
     if not user or not verify_password(data.password, user.get("password_hash", "")):
         raise HTTPException(401, "Email ou senha incorretos")
     token = create_access_token(user["_id"], user["email"])
@@ -109,9 +114,10 @@ def update_profile(data: ProfileUpdate, current_user: dict = Depends(get_current
 
 @router.put("/email")
 def update_email(data: EmailUpdate, current_user: dict = Depends(get_current_user)):
-    if db.profiles.find_one({"email": data.email, "_id": {"$ne": current_user["id"]}}):
+    email = data.email.lower()
+    if db.profiles.find_one({"email": email, "_id": {"$ne": current_user["id"]}}):
         raise HTTPException(400, "Email ja em uso")
-    db.profiles.update_one({"_id": current_user["id"]}, {"$set": {"email": data.email}})
+    db.profiles.update_one({"_id": current_user["id"]}, {"$set": {"email": email}})
     return {"ok": True}
 
 
@@ -119,8 +125,12 @@ def update_email(data: EmailUpdate, current_user: dict = Depends(get_current_use
 def update_password(data: PasswordUpdate, current_user: dict = Depends(get_current_user)):
     if len(data.password) < 6:
         raise HTTPException(400, "Senha deve ter ao menos 6 caracteres")
+    try:
+        password_hash = hash_password(data.password)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
     db.profiles.update_one(
         {"_id": current_user["id"]},
-        {"$set": {"password_hash": hash_password(data.password)}},
+        {"$set": {"password_hash": password_hash}},
     )
     return {"ok": True}

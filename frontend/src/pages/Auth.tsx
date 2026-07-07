@@ -15,6 +15,12 @@ import { loginUser, registerUser } from '../api/client'
 
 type Mode = 'login' | 'register'
 
+const MAX_PASSWORD_BYTES = 72
+
+function getPasswordByteLength(password: string) {
+  return new TextEncoder().encode(password).length
+}
+
 function getErrorMessage(error: unknown, fallback: string) {
   if (typeof error === 'object' && error && 'response' in error) {
     const response = (error as { response?: { data?: { detail?: string } } }).response
@@ -78,7 +84,7 @@ export default function Auth({ initialMode = 'login' }: { initialMode?: Mode }) 
     setLoading(true)
     setError('')
     try {
-      const data = await loginUser({ email, password })
+      const data = await loginUser({ email: email.trim().toLowerCase(), password })
       setSession({ access_token: data.session.access_token, user: data.user })
       setProfile(data.profile || null)
       setCouple(data.couple || null)
@@ -103,11 +109,15 @@ export default function Auth({ initialMode = 'login' }: { initialMode?: Mode }) 
       setError('Senha deve ter ao menos 6 caracteres')
       return
     }
+    if (getPasswordByteLength(password) > MAX_PASSWORD_BYTES) {
+      setError('Senha muito longa (máximo 72 caracteres)')
+      return
+    }
     setLoading(true)
     setError('')
     try {
       const data = await registerUser({
-        email,
+        email: email.trim().toLowerCase(),
         password,
         name,
         monthly_income: parseFloat(income) || 0,

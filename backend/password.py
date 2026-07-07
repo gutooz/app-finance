@@ -1,8 +1,13 @@
 import bcrypt as _bcrypt
 
+MAX_PASSWORD_BYTES = 72
+
 
 def hash_password(plain: str) -> str:
-    return _bcrypt.hashpw(plain.encode(), _bcrypt.gensalt()).decode()
+    encoded = plain.encode()
+    if len(encoded) > MAX_PASSWORD_BYTES:
+        raise ValueError(f"Senha muito longa (maximo {MAX_PASSWORD_BYTES} bytes)")
+    return _bcrypt.hashpw(encoded, _bcrypt.gensalt()).decode()
 
 
 def verify_password(plain: str, hashed: str) -> bool:

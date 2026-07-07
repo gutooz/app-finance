@@ -126,6 +126,7 @@ def complete_telegram_profile(
     if not row:
         raise ValueError("Link invalido ou expirado")
     user_id = row["user_id"]
+    email = email.lower()
 
     # Check email uniqueness
     if db.profiles.find_one({"email": email, "_id": {"$ne": user_id}}):
