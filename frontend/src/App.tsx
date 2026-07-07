@@ -14,6 +14,7 @@ import Calendar from './pages/Calendar'
 import Settings from './pages/Settings'
 import CompleteProfile from './pages/CompleteProfile'
 import Admin from './pages/Admin'
+import BankAccounts from './pages/BankAccounts'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { session } = useStore()
@@ -60,6 +61,7 @@ function App() {
           <Route path="/summary" element={<RequireCouple><Summary /></RequireCouple>} />
           <Route path="/calendar" element={<RequireCouple><Calendar /></RequireCouple>} />
           <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
+          <Route path="/settings/bancos" element={<RequireCouple><BankAccounts /></RequireCouple>} />
           <Route path="/admin" element={<RequireAuth><Admin /></RequireAuth>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

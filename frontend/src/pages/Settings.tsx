@@ -4,8 +4,10 @@ import {
   AlertCircle,
   Check,
   ChevronLeft,
+  ChevronRight,
   Clipboard,
   ExternalLink,
+  Landmark,
   Lock,
   Mail,
   MessageCircle,
@@ -269,6 +271,22 @@ export default function Settings() {
             </div>
           </div>
         </div>
+
+        {/* Contas bancarias */}
+        <button
+          type="button"
+          onClick={() => navigate('/settings/bancos')}
+          className="card flex items-center gap-3 w-full text-left hover:bg-gray-50 transition-colors"
+        >
+          <div className="w-11 h-11 rounded-2xl bg-sky-500 text-white flex items-center justify-center">
+            <Landmark size={20} />
+          </div>
+          <div className="flex-1">
+            <p className="font-semibold text-gray-900">Contas bancarias</p>
+            <p className="text-sm text-gray-400">Conecte seu banco e importe gastos automaticamente</p>
+          </div>
+          <ChevronRight size={18} className="text-gray-300" />
+        </button>
 
         {/* Perfil */}
         <div className="card">

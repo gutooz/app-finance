@@ -121,3 +121,32 @@ export const getSummary = (coupleId: string | number, month?: number, year?: num
 
 // --- Admin ---
 export const getAdminStats = () => api.get('/admin/stats').then(r => r.data)
+
+// --- Pluggy (Open Finance) ---
+export interface PluggyItem {
+  id: string
+  item_id: string
+  connector: { id?: number; name?: string; imageUrl?: string }
+  status: string
+  last_synced_at: string | null
+  created_at: string
+}
+
+export const getPluggyConnectToken = () =>
+  api.post('/pluggy/connect-token').then(r => r.data as { connectToken: string })
+
+export const linkPluggyItem = (itemId: string) =>
+  api.post('/pluggy/items', { item_id: itemId }).then(r => r.data as PluggyItem)
+
+export const getPluggyItems = () => api.get('/pluggy/items').then(r => r.data as PluggyItem[])
+
+export const getPluggyAccounts = (itemId: string) =>
+  api.get(`/pluggy/items/${itemId}/accounts`).then(r => r.data as Array<{
+    id: string; name: string; type: string; subtype: string; balance: number; currencyCode: string
+  }>)
+
+export const syncPluggyItem = (itemId: string) =>
+  api.post(`/pluggy/items/${itemId}/sync`).then(r => r.data as { imported: number; synced_at: string })
+
+export const deletePluggyItem = (itemId: string) =>
+  api.delete(`/pluggy/items/${itemId}`).then(r => r.data)
