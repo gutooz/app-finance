@@ -202,6 +202,7 @@ export default function Dashboard() {
   const [prevSummary, setPrevSummary] = useState<any>(null)
   const [expenses, setExpenses]     = useState<any[]>([])
   const [bills, setBills]           = useState<any[]>([])
+  const [monthlyHistory, setMonthlyHistory] = useState<BarPoint[]>([])
   const [loading, setLoading]       = useState(true)
 
   useEffect(() => {
@@ -210,16 +211,28 @@ export default function Dashboard() {
     const prevM = month === 1 ? 12 : month - 1
     const prevY = month === 1 ? year - 1 : year
 
+    const pastMonths: { m: number; y: number }[] = []
+    for (let i = 5; i >= 1; i--) {
+      const m = month - i <= 0 ? month - i + 12 : month - i
+      const y = month - i <= 0 ? year - 1 : year
+      pastMonths.push({ m, y })
+    }
+
     Promise.all([
       getSummary(id, month, year),
       getSummary(id, prevM, prevY).catch(() => null),
       getExpenses(id, month, year).catch(() => []),
       getBills(id, month, year).catch(() => []),
-    ]).then(([s, ps, e, b]) => {
+      Promise.all(pastMonths.map(({ m, y }) => getSummary(id, m, y).catch(() => null))),
+    ]).then(([s, ps, e, b, history]) => {
       setSummary(s)
       setPrevSummary(ps)
       setExpenses(Array.isArray(e) ? e : [])
       setBills(Array.isArray(b) ? b : [])
+      setMonthlyHistory(pastMonths.map(({ m }, idx) => ({
+        month: MS[m - 1],
+        value: history[idx]?.total_expenses || 0,
+      })))
     }).finally(() => setLoading(false))
   }, [couple]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -256,15 +269,8 @@ export default function Dashboard() {
   const upcomingBills  = bills.filter((b: any) => !b.is_paid).slice(0, 5)
 
   const chartData: BarPoint[] = useMemo(() => {
-    const pts: BarPoint[] = []
-    for (let i = 5; i >= 1; i--) {
-      const m = month - i <= 0 ? month - i + 12 : month - i
-      const mock = 3400 + ((m * 317 + 127) % 1100)
-      pts.push({ month: MS[m - 1], value: mock })
-    }
-    pts.push({ month: MS[month - 1], value: totalExpenses || 3600 })
-    return pts
-  }, [month, totalExpenses])
+    return [...monthlyHistory, { month: MS[month - 1], value: totalExpenses }]
+  }, [month, totalExpenses, monthlyHistory])
 
   const balDesc = summary?.balance_description
     ? summary.balance_description.replace('Voces estao quites!', 'Vocês estão quites!')

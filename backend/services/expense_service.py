@@ -20,6 +20,7 @@ def _ser_expense(doc: dict) -> dict:
             "id": paid_by.get("_id") or doc.get("paid_by_id"),
             "name": paid_by.get("name"),
         },
+        "payer_amounts": doc.get("payer_amounts") or {},
     }
 
 
@@ -32,6 +33,7 @@ def add_expense(
     split_type: str = "couple",
     expense_date: date | None = None,
     source: str = "manual",
+    payer_amounts: dict[str, float] | None = None,
 ) -> dict:
     d = expense_date or date.today()
     doc = {
@@ -45,6 +47,8 @@ def add_expense(
         "source": source,
         "created_at": datetime.utcnow(),
     }
+    if payer_amounts:
+        doc["payer_amounts"] = {k: float(v) for k, v in payer_amounts.items()}
     result = db.expenses.insert_one(doc)
     doc["_id"] = result.inserted_id
     doc["paid_by"] = {"_id": paid_by_id, "name": None}

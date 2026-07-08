@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from backend.routes import auth, couples, expenses, bills, goals, summary, telegram, whatsapp, admin, pluggy
+from backend.routes import auth, couples, expenses, bills, goals, summary, telegram, whatsapp, admin, pluggy, categories
 
 app = FastAPI(title="FinCouple API", version="2.0")
 
@@ -34,6 +34,7 @@ app.include_router(telegram.router)
 app.include_router(whatsapp.router)
 app.include_router(admin.router)
 app.include_router(pluggy.router)
+app.include_router(categories.router)
 
 
 @app.get("/")

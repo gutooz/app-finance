@@ -32,6 +32,8 @@ def get_monthly_summary(couple_id: str, month: int, year: int) -> dict:
     user2_paid = 0.0
     balance = 0.0  # positive = user2 owes user1
 
+    user2_id = couple.get("user2_id")
+
     for e in expenses:
         amount = float(e["amount"])
         total += amount
@@ -39,7 +41,15 @@ def get_monthly_summary(couple_id: str, month: int, year: int) -> dict:
         by_category[cat] = by_category.get(cat, 0) + amount
         payer_is_1 = e["paid_by_id"] == user1_id
 
-        if e["split_type"] == "couple":
+        if e["split_type"] == "both":
+            payer_amounts = e.get("payer_amounts") or {}
+            amt1 = float(payer_amounts.get(user1_id, 0))
+            amt2 = float(payer_amounts.get(user2_id, 0))
+            user1_paid += amt1
+            user2_paid += amt2
+            s1, _s2 = calculate_split(amount, split_mode, inc1, inc2)
+            balance += amt1 - s1
+        elif e["split_type"] == "couple":
             s1, s2 = calculate_split(amount, split_mode, inc1, inc2)
             if payer_is_1:
                 user1_paid += amount

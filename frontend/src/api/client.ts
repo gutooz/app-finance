@@ -81,6 +81,7 @@ export const getMyCouple = () => api.get('/couples/me').then(r => r.data)
 export const addExpense = (coupleId: string | number, data: {
   paid_by_id?: string; amount: number; category: string
   description?: string; split_type: string; date?: string
+  payer_amounts?: Record<string, number>
 }) => api.post(`/couples/${coupleId}/expenses/`, data).then(r => r.data)
 
 export const getExpenses = (coupleId: string | number, month?: number, year?: number) =>
@@ -114,6 +115,21 @@ export const contributeGoal = (coupleId: string | number, goalId: string | numbe
 
 export const deleteGoal = (coupleId: string | number, goalId: string | number) =>
   api.delete(`/couples/${coupleId}/goals/${goalId}`).then(r => r.data)
+
+// --- Categories ---
+export interface ExpenseCategory { id: string; name: string; value: string; emoji: string }
+
+export const getCategories = (coupleId: string | number) =>
+  api.get(`/couples/${coupleId}/categories/`).then(r => r.data as ExpenseCategory[])
+
+export const createCategory = (coupleId: string | number, data: { name: string; emoji: string }) =>
+  api.post(`/couples/${coupleId}/categories/`, data).then(r => r.data as ExpenseCategory)
+
+export const updateCategory = (coupleId: string | number, categoryId: string, data: { name?: string; emoji?: string }) =>
+  api.put(`/couples/${coupleId}/categories/${categoryId}`, data).then(r => r.data as ExpenseCategory)
+
+export const deleteCategory = (coupleId: string | number, categoryId: string) =>
+  api.delete(`/couples/${coupleId}/categories/${categoryId}`).then(r => r.data)
 
 // --- Summary ---
 export const getSummary = (coupleId: string | number, month?: number, year?: number) =>

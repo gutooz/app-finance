@@ -14,6 +14,7 @@ class ExpenseCreate(BaseModel):
     description: str = ""
     split_type: str = "couple"
     paid_by_id: Optional[str] = None
+    payer_amounts: Optional[dict[str, float]] = None
     date: Optional[date] = None
     source: str = "manual"
 
@@ -30,6 +31,10 @@ def _check_couple_access(couple_id: str, user_id: str) -> dict:
 @router.post("/")
 def add_expense(couple_id: str, data: ExpenseCreate, current_user: dict = Depends(get_current_user)):
     _check_couple_access(couple_id, current_user["id"])
+    if data.split_type == "both" and data.payer_amounts:
+        total_paid = sum(data.payer_amounts.values())
+        if abs(total_paid - data.amount) > 0.01:
+            raise HTTPException(400, "A soma dos valores de cada pessoa deve ser igual ao valor total")
     return expense_service.add_expense(
         couple_id=couple_id,
         paid_by_id=data.paid_by_id or current_user["id"],
@@ -39,6 +44,7 @@ def add_expense(couple_id: str, data: ExpenseCreate, current_user: dict = Depend
         split_type=data.split_type,
         expense_date=data.date,
         source=data.source,
+        payer_amounts=data.payer_amounts,
     )
 
 

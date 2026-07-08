@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  BadgeDollarSign,
   Eye,
   EyeOff,
   Heart,
@@ -19,6 +18,11 @@ const MAX_PASSWORD_BYTES = 72
 
 function getPasswordByteLength(password: string) {
   return new TextEncoder().encode(password).length
+}
+
+function formatCentsToBRL(digits: string) {
+  const cents = parseInt(digits || '0', 10)
+  return (cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -120,7 +124,7 @@ export default function Auth({ initialMode = 'login' }: { initialMode?: Mode }) 
         email: email.trim().toLowerCase(),
         password,
         name,
-        monthly_income: parseFloat(income) || 0,
+        monthly_income: income ? parseInt(income, 10) / 100 : 0,
         gender,
       })
       setSession({ access_token: data.session.access_token, user: data.user })
@@ -128,7 +132,7 @@ export default function Auth({ initialMode = 'login' }: { initialMode?: Mode }) 
         id: data.user.id,
         email: data.user.email,
         name,
-        monthly_income: parseFloat(income) || 0,
+        monthly_income: income ? parseInt(income, 10) / 100 : 0,
         gender,
         couple_id: null,
       })
@@ -294,20 +298,20 @@ export default function Auth({ initialMode = 'login' }: { initialMode?: Mode }) 
             {mode === 'register' && (
               <div>
                 <label htmlFor="income" className="mb-2 block text-base font-bold text-[#101828]">
-                  Sua renda mensal <span className="font-medium text-[#667085]">(opcional)</span>
+                  Sua renda mensal em reais <span className="font-medium text-[#667085]">(opcional)</span>
                 </label>
                 <div className="relative">
-                  <BadgeDollarSign className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#EC3E92] sm:left-6 sm:h-6 sm:w-6" />
+                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base font-bold text-[#EC3E92] sm:left-6 sm:text-lg">
+                    R$
+                  </span>
                   <input
                     id="income"
-                    className="min-h-[52px] w-full rounded-[1rem] border border-[#DDE1E8] bg-white py-3 pl-12 pr-4 text-base text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-[#EC3E92] focus:ring-4 focus:ring-pink-100 sm:min-h-[58px] sm:rounded-[1.15rem] sm:pl-16 sm:pr-5 sm:text-lg"
+                    className="min-h-[52px] w-full rounded-[1rem] border border-[#DDE1E8] bg-white py-3 pl-14 pr-4 text-base text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-[#EC3E92] focus:ring-4 focus:ring-pink-100 sm:min-h-[58px] sm:rounded-[1.15rem] sm:pl-20 sm:pr-5 sm:text-lg"
                     placeholder="0,00"
-                    type="number"
-                    value={income}
-                    onChange={(event) => setIncome(event.target.value)}
-                    min="0"
-                    step="0.01"
-                    inputMode="decimal"
+                    type="text"
+                    value={income ? formatCentsToBRL(income) : ''}
+                    onChange={(event) => setIncome(event.target.value.replace(/\D/g, ''))}
+                    inputMode="numeric"
                   />
                 </div>
               </div>

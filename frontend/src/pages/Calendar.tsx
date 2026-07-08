@@ -222,7 +222,7 @@ export default function Calendar() {
                                 <PenLine size={11} className="text-gray-400" />
                               )}
                               <span className="text-xs text-gray-400">
-                                {isTelegram ? 'Telegram' : 'Manual'} • {e.paid_by?.name || 'Você'}
+                                {isTelegram ? 'Telegram' : 'Manual'} • {e.split_type === 'both' ? 'Ambos' : (e.paid_by?.name || 'Você')}
                               </span>
                             </div>
                           </div>
