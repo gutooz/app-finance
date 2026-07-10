@@ -1,13 +1,27 @@
 import axios from 'axios'
+import { Capacitor } from '@capacitor/core'
 import { useStore } from '../store/useStore'
 
 const configuredApiUrl = import.meta.env.VITE_API_URL || ''
 const isLocalApiUrl = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(configuredApiUrl)
-const apiBaseURL = import.meta.env.DEV
-  ? configuredApiUrl || 'http://localhost:8000'
-  : isLocalApiUrl
-    ? ''
-    : configuredApiUrl
+
+// No app nativo (iOS/Android) NAO existe "mesma origem": o app roda em
+// capacitor://localhost, entao toda chamada precisa de uma URL ABSOLUTA
+// do backend. Usamos VITE_API_URL (deve apontar para o backend em producao).
+const isNative = Capacitor.isNativePlatform()
+
+const apiBaseURL = isNative
+  ? configuredApiUrl
+  : import.meta.env.DEV
+    ? configuredApiUrl || 'http://localhost:8000'
+    : isLocalApiUrl
+      ? ''
+      : configuredApiUrl
+
+if (isNative && !configuredApiUrl) {
+  // Falha cedo e de forma clara em vez de bater em capacitor://localhost
+  console.error('[FinCouple] VITE_API_URL nao definido no build nativo. Configure o backend em producao antes de gerar o app.')
+}
 
 const api = axios.create({
   baseURL: apiBaseURL,

@@ -1,0 +1,115 @@
+# Codemagic CI/CD — build do app iOS (FinCouple / Capacitor) a partir do Windows.
+# Docs: https://docs.codemagic.io/yaml-quick-start/building-a-native-ios-app/
+#
+# São 2 workflows:
+#   1) ios-simulator  -> build SEM assinatura (nao precisa de conta Apple).
+#                        Serve para provar que o app compila no iOS.
+#   2) ios-testflight -> build assinado + envio pro TestFlight.
+#                        EXIGE conta Apple Developer + integracao configurada no Codemagic.
+
+workflows:
+  # ---------------------------------------------------------------------------
+  # 1) BUILD DE SIMULADOR — sem assinatura, sem conta Apple. Comece por aqui.
+  # ---------------------------------------------------------------------------
+  ios-simulator:
+    name: FinCouple iOS (simulador, sem assinatura)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      node: 20
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Instalar dependencias npm
+        script: |
+          cd frontend
+          npm ci
+      - name: Build do app web (Vite)
+        script: |
+          cd frontend
+          npm run build
+      - name: Capacitor sync iOS
+        script: |
+          cd frontend
+          npx cap sync ios
+      - name: CocoaPods
+        script: |
+          cd frontend/ios/App
+          pod install
+      - name: Build para simulador (sem assinatura)
+        script: |
+          cd frontend/ios/App
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+    artifacts:
+      - /tmp/xcodebuild_logs/*.log
+
+  # ---------------------------------------------------------------------------
+  # 2) BUILD ASSINADO + TESTFLIGHT — requer conta Apple Developer ($99/ano).
+  #    Antes de rodar este workflow:
+  #      - Crie o app no App Store Connect com Bundle ID: com.fincouple.app
+  #      - No Codemagic: Teams > Integrations > Apple Developer Portal
+  #        (adicione uma App Store Connect API key)
+  #      - Ajuste "integrations.app_store_connect" abaixo com o nome da sua key.
+  # ---------------------------------------------------------------------------
+  ios-testflight:
+    name: FinCouple iOS (assinado + TestFlight)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: CodemagicApiKey   # <-- troque pelo nome da sua API key no Codemagic
+    environment:
+      node: 20
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.fincouple.app
+      vars:
+        BUNDLE_ID: "com.fincouple.app"
+        XCODE_WORKSPACE: "App.xcworkspace"
+        XCODE_SCHEME: "App"
+    scripts:
+      - name: Instalar dependencias npm
+        script: |
+          cd frontend
+          npm ci
+      - name: Build do app web (Vite)
+        script: |
+          cd frontend
+          npm run build
+      - name: Capacitor sync iOS
+        script: |
+          cd frontend
+          npx cap sync ios
+      - name: CocoaPods
+        script: |
+          cd frontend/ios/App
+          pod install
+      - name: Configurar assinatura (Codemagic)
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
+      - name: Build (archive) assinado
+        script: |
+          cd frontend/ios/App
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
