@@ -3,20 +3,20 @@ import { Capacitor } from '@capacitor/core'
 import { useStore } from '../store/useStore'
 
 const configuredApiUrl = import.meta.env.VITE_API_URL || ''
-const isLocalApiUrl = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(configuredApiUrl)
 
 // No app nativo (iOS/Android) NAO existe "mesma origem": o app roda em
 // capacitor://localhost, entao toda chamada precisa de uma URL ABSOLUTA
 // do backend. Usamos VITE_API_URL (deve apontar para o backend em producao).
 const isNative = Capacitor.isNativePlatform()
 
+// No deploy web (Vercel) o frontend e a API sao servidos no MESMO dominio
+// (ver vercel.json), entao producao web SEMPRE usa mesma origem (baseURL '').
+// VITE_API_URL so importa para o build nativo; nunca deve vazar para a web.
 const apiBaseURL = isNative
   ? configuredApiUrl
   : import.meta.env.DEV
     ? configuredApiUrl || 'http://localhost:8000'
-    : isLocalApiUrl
-      ? ''
-      : configuredApiUrl
+    : ''
 
 if (isNative && !configuredApiUrl) {
   // Falha cedo e de forma clara em vez de bater em capacitor://localhost
@@ -148,6 +148,29 @@ export const deleteCategory = (coupleId: string | number, categoryId: string) =>
 // --- Summary ---
 export const getSummary = (coupleId: string | number, month?: number, year?: number) =>
   api.get(`/couples/${coupleId}/summary/`, { params: { month, year } }).then(r => r.data)
+
+// --- Assistente (Fin — IA / Ollama) ---
+export interface ChatTurn { role: 'user' | 'assistant'; content: string }
+
+export interface AssistantReply {
+  reply: string
+  actions: string[]
+  model: string
+}
+
+export const askAssistant = (
+  coupleId: string | number,
+  message: string,
+  history: ChatTurn[],
+) =>
+  api
+    .post(`/couples/${coupleId}/assistant/chat`, { message, history })
+    .then(r => r.data as AssistantReply)
+
+export const getAssistantHealth = (coupleId: string | number) =>
+  api.get(`/couples/${coupleId}/assistant/health`).then(r => r.data as {
+    ok: boolean; base_url: string; model: string; model_available?: boolean; error?: string
+  })
 
 // --- Admin ---
 export const getAdminStats = () => api.get('/admin/stats').then(r => r.data)
