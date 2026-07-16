@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ChevronLeft, Check, Pencil, Trash2, Plus } from 'lucide-react'
 import {
   addExpense, getCategories, createCategory, updateCategory, deleteCategory, type ExpenseCategory,
@@ -14,7 +14,12 @@ const SPLIT_TYPES = [
 
 export default function AddExpense() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { couple, profile: currentUser } = useStore()
+  const [entryType, setEntryType] = useState<'income' | 'expense'>(
+    searchParams.get('type') === 'income' ? 'income' : 'expense'
+  )
+  const isIncome = entryType === 'income'
   const [amount, setAmount] = useState('')
   const [category, setCategory] = useState('')
   const [description, setDescription] = useState('')
@@ -43,11 +48,13 @@ export default function AddExpense() {
 
   useEffect(() => { loadCategories() }, [couple])
 
+  const visibleCategories = categories.filter(c => c.type === entryType)
+
   useEffect(() => {
-    if (categories.length && !categories.find(c => c.value === category)) {
-      setCategory(categories[0].value)
+    if (visibleCategories.length && !visibleCategories.find(c => c.value === category)) {
+      setCategory(visibleCategories[0].value)
     }
-  }, [categories]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [categories, entryType]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const openAddCategory = () => {
     setEditingCat(null)
@@ -75,7 +82,7 @@ export default function AddExpense() {
       if (editingCat) {
         await updateCategory(couple.id, editingCat.id, { name: catName, emoji: catEmoji })
       } else {
-        await createCategory(couple.id, { name: catName, emoji: catEmoji })
+        await createCategory(couple.id, { name: catName, emoji: catEmoji, type: entryType })
       }
       resetCatForm()
       loadCategories()
@@ -129,7 +136,8 @@ export default function AddExpense() {
         amount: parseFloat(amount),
         category,
         description,
-        split_type: bothPaid ? 'both' : splitType,
+        split_type: bothPaid ? 'both' : (isIncome ? 'mine' : splitType),
+        type: entryType,
         ...(bothPaid && partner ? {
           payer_amounts: {
             [currentUser.id]: parseFloat(myAmount) || 0,
@@ -139,7 +147,7 @@ export default function AddExpense() {
       })
       navigate('/dashboard')
     } catch {
-      setError('Erro ao salvar gasto.')
+      setError(isIncome ? 'Erro ao salvar entrada.' : 'Erro ao salvar gasto.')
     } finally {
       setLoading(false)
     }
@@ -152,10 +160,30 @@ export default function AddExpense() {
         <button onClick={() => navigate(-1)} className="text-gray-500 mr-3">
           <ChevronLeft size={24} />
         </button>
-        <h1 className="text-xl font-bold text-gray-900">Adicionar Gasto</h1>
+        <h1 className="text-xl font-bold text-gray-900">{isIncome ? 'Adicionar Entrada' : 'Adicionar Saída'}</h1>
       </div>
 
       <div className="flex-1 px-4 py-6 space-y-6 overflow-y-auto">
+        {/* Entry type toggle */}
+        <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100 rounded-xl">
+          <button
+            onClick={() => setEntryType('expense')}
+            className={`py-2 rounded-lg text-sm font-semibold transition-all ${
+              !isIncome ? 'bg-white text-pink-600 shadow-sm' : 'text-gray-500'
+            }`}
+          >
+            Saída
+          </button>
+          <button
+            onClick={() => setEntryType('income')}
+            className={`py-2 rounded-lg text-sm font-semibold transition-all ${
+              isIncome ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500'
+            }`}
+          >
+            Entrada
+          </button>
+        </div>
+
         {/* Amount */}
         <div>
           <label className="block text-sm font-medium text-gray-500 mb-1">Valor</label>
@@ -178,7 +206,7 @@ export default function AddExpense() {
           <label className="block text-sm font-medium text-gray-500 mb-1">Descrição (opcional)</label>
           <input
             className="input"
-            placeholder="Ex: Compras da semana"
+            placeholder={isIncome ? 'Ex: Salário de julho' : 'Ex: Compras da semana'}
             value={description}
             onChange={e => setDescription(e.target.value)}
           />
@@ -201,13 +229,13 @@ export default function AddExpense() {
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-2">
-              {categories.map(cat => (
+              {visibleCategories.map(cat => (
                 <button
                   key={cat.id}
                   onClick={() => setCategory(cat.value)}
                   className={`p-3 rounded-xl border-2 flex flex-col items-center gap-1 transition-all ${
                     category === cat.value
-                      ? 'border-pink-500 bg-pink-50'
+                      ? (isIncome ? 'border-green-500 bg-green-50' : 'border-pink-500 bg-pink-50')
                       : 'border-gray-200 bg-white'
                   }`}
                 >
@@ -226,9 +254,9 @@ export default function AddExpense() {
           )}
         </div>
 
-        {/* Who paid */}
+        {/* Who paid / received */}
         <div>
-          <label className="block text-sm font-medium text-gray-500 mb-2">Quem pagou?</label>
+          <label className="block text-sm font-medium text-gray-500 mb-2">{isIncome ? 'Quem recebeu?' : 'Quem pagou?'}</label>
           <div className="grid grid-cols-2 gap-2 mb-2">
             {[
               { id: currentUser?.id, name: `Eu (${currentUser?.name})` },
@@ -253,7 +281,7 @@ export default function AddExpense() {
               bothPaid ? 'border-pink-500 bg-pink-50 text-pink-700' : 'border-gray-200 text-gray-700'
             }`}
           >
-            Os dois pagaram
+            {isIncome ? 'Os dois receberam' : 'Os dois pagaram'}
           </button>
 
           {bothPaid && (
@@ -291,7 +319,7 @@ export default function AddExpense() {
         </div>
 
         {/* Split type */}
-        {!bothPaid && (
+        {!bothPaid && !isIncome && (
           <div>
             <label className="block text-sm font-medium text-gray-500 mb-2">Esse gasto é:</label>
             <div className="space-y-2">
@@ -320,8 +348,14 @@ export default function AddExpense() {
       </div>
 
       <div className="px-4 pb-8 pt-4 border-t border-gray-100">
-        <button className="btn-primary" onClick={handleSave} disabled={loading || !amount}>
-          {loading ? 'Salvando...' : 'Salvar Gasto'}
+        <button
+          className={isIncome
+            ? 'w-full bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-semibold py-3 px-4 rounded-2xl transition-colors cursor-pointer disabled:opacity-60'
+            : 'btn-primary'}
+          onClick={handleSave}
+          disabled={loading || !amount}
+        >
+          {loading ? 'Salvando...' : (isIncome ? 'Salvar Entrada' : 'Salvar Gasto')}
         </button>
       </div>
 
@@ -338,7 +372,7 @@ export default function AddExpense() {
             <h3 className="font-bold text-gray-900 mb-4">Gerenciar categorias</h3>
 
             <div className="space-y-2 mb-4">
-              {categories.map(cat => (
+              {visibleCategories.map(cat => (
                 <div key={cat.id} className="flex items-center gap-2 p-2 rounded-xl hover:bg-gray-50">
                   <span className="text-xl w-7 text-center">{cat.emoji}</span>
                   <span className="flex-1 text-sm font-medium text-gray-700">{cat.name}</span>
@@ -350,7 +384,7 @@ export default function AddExpense() {
                   </button>
                 </div>
               ))}
-              {categories.length === 0 && (
+              {visibleCategories.length === 0 && (
                 <p className="text-sm text-gray-400 text-center py-4">Nenhuma categoria ainda</p>
               )}
             </div>

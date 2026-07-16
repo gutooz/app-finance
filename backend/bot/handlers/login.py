@@ -5,7 +5,6 @@ from telegram.ext import ContextTypes, ConversationHandler
 from backend.mongo_client import db
 from backend.password import verify_password
 from backend.services import couple_service
-from backend.bot import keyboards
 from backend.bot.handlers.user_context import clear_user_context
 from backend.bot.states import LOGIN_EMAIL, LOGIN_PASSWORD
 
@@ -25,9 +24,8 @@ async def start_login(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
                     couple_info = f"\n👫 Parceiro(a): *{partner['name']}*"
         await update.message.reply_text(
             f"✅ Você já está conectado como *{profile['name']}*!{couple_info}\n\n"
-            "Use o menu abaixo para registrar gastos.",
+            "Pode falar ou mandar um áudio — a Fin cuida do resto.",
             parse_mode="Markdown",
-            reply_markup=keyboards.main_menu(),
         )
         return ConversationHandler.END
 
@@ -108,9 +106,9 @@ async def receive_password(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     await update.effective_chat.send_message(
         f"✅ *Login realizado com sucesso!*\n\n"
         f"Bem-vindo(a), *{name}*! 👋{couple_info}\n\n"
-        "Agora você pode registrar gastos e controlar as finanças do casal diretamente pelo Telegram! 🎉",
+        "Agora é só falar (ou mandar um áudio) — a Fin registra gastos, contas, "
+        "metas e controla o resto das finanças do casal por aqui! 🎉",
         parse_mode="Markdown",
-        reply_markup=keyboards.main_menu(),
     )
     return ConversationHandler.END
 

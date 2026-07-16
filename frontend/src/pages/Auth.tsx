@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   Eye,
   EyeOff,
@@ -293,6 +293,14 @@ export default function Auth({ initialMode = 'login' }: { initialMode?: Mode }) 
                   {showPass ? <EyeOff size={22} /> : <Eye size={22} />}
                 </button>
               </div>
+              {mode === 'login' && (
+                <Link
+                  to="/esqueci-senha"
+                  className="mt-2 inline-block text-sm font-bold text-[#D92D7D] hover:underline"
+                >
+                  Esqueci minha senha
+                </Link>
+              )}
             </div>
 
             {mode === 'register' && (

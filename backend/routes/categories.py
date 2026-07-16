@@ -10,6 +10,7 @@ router = APIRouter(prefix="/couples/{couple_id}/categories", tags=["categories"]
 class CategoryCreate(BaseModel):
     name: str
     emoji: str = "📦"
+    type: str = "expense"
 
 
 class CategoryUpdate(BaseModel):
@@ -37,7 +38,9 @@ def create_category(couple_id: str, data: CategoryCreate, current_user: dict = D
     _check_access(couple_id, current_user["id"])
     if not data.name.strip():
         raise HTTPException(400, "Nome obrigatorio")
-    return category_service.create_category(couple_id, data.name, data.emoji)
+    if data.type not in ("income", "expense"):
+        raise HTTPException(400, "Tipo invalido")
+    return category_service.create_category(couple_id, data.name, data.emoji, data.type)
 
 
 @router.put("/{category_id}")

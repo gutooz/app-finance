@@ -7,7 +7,6 @@ from pydantic import BaseModel, EmailStr, Field
 from telegram import Update
 from telegram.ext import (
     Application,
-    CallbackQueryHandler,
     CommandHandler,
     MessageHandler,
     filters,
@@ -15,17 +14,13 @@ from telegram.ext import (
 
 from backend.auth import get_current_user
 from backend.bot.main import (
-    build_bill_handler,
-    build_contrib_handler,
-    build_expense_handler,
-    build_goal_handler,
     build_login_handler,
     build_onboarding_handler,
     handle_help,
     handle_logout,
-    handle_menu_callback,
-    handle_nl_message,
     handle_status,
+    handle_text_message,
+    handle_voice_message,
 )
 from backend.services import telegram_link_service
 
@@ -66,15 +61,11 @@ async def _get_telegram_app() -> Application:
         app = Application.builder().token(token).build()
         app.add_handler(build_login_handler())
         app.add_handler(build_onboarding_handler())
-        app.add_handler(build_expense_handler())
-        app.add_handler(build_bill_handler())
-        app.add_handler(build_goal_handler())
-        app.add_handler(build_contrib_handler())
         app.add_handler(CommandHandler("logout", handle_logout))
         app.add_handler(CommandHandler("status", handle_status))
         app.add_handler(CommandHandler("help", handle_help))
-        app.add_handler(CallbackQueryHandler(handle_menu_callback))
-        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_nl_message))
+        app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, handle_voice_message))
+        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_message))
 
         await app.initialize()
         await app.bot.set_my_commands([

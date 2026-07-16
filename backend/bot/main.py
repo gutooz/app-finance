@@ -14,26 +14,50 @@ load_dotenv()
 
 from backend.bot.states import (
     ONBOARD_NAME, ONBOARD_INCOME, ONBOARD_CHOICE, ONBOARD_TOKEN, ONBOARD_SPLIT,
-    EXP_AMOUNT, EXP_CATEGORY, EXP_PAID_BY, EXP_SPLIT,
-    BILL_NAME, BILL_AMOUNT, BILL_DUE_DAY,
-    GOAL_NAME, GOAL_TARGET, CONTRIB_AMOUNT,
     LOGIN_EMAIL, LOGIN_PASSWORD,
 )
-from backend.bot.handlers import onboarding, expenses, bills, goals, summary
+from backend.bot.handlers import onboarding
 from backend.bot.handlers import login as login_handler
-from backend.bot.handlers.natural_language import parse_expense
 from backend.bot.handlers.user_context import load_user_context, clear_user_context
-from backend.bot import keyboards
-from backend.services import expense_service, transaction_service, couple_service
+from backend.services import ai_assistant_service, audio_service, couple_service
 from backend.mongo_client import db
 
+# Ações da Fin que afetam dados do casal (não só consultas) — usadas para decidir
+# quando avisar o parceiro sobre o que foi feito.
+COUPLE_MUTATING_ACTIONS = {
+    "add_bill", "pay_bill", "unpay_bill", "delete_bill",
+    "create_goal", "contribute_goal", "delete_goal",
+    "delete_expense",
+    "create_category", "update_category", "delete_category",
+}
 
-async def handle_nl_message(update, context):
-    """Fallback: parse natural-language expense and register it immediately."""
-    if not update.message or not update.message.text:
-        return
 
-    # Always check authentication first
+def _action_succeeded(result: dict) -> bool:
+    return result.get("ok", True) is not False and "error" not in result
+
+
+def _should_notify_partner(action: dict) -> bool:
+    result = action.get("result") or {}
+    if not _action_succeeded(result):
+        return False
+    name = action.get("name")
+    if name == "add_expense":
+        return (action.get("args") or {}).get("split_type", "couple") == "couple"
+    return name in COUPLE_MUTATING_ACTIONS
+
+
+async def _typing_loop(context, chat_id: int, action: str = "typing"):
+    """Mantém o indicador 'digitando...' vivo enquanto a Fin processa (Ollama/Whisper podem demorar)."""
+    try:
+        while True:
+            await context.bot.send_chat_action(chat_id=chat_id, action=action)
+            await asyncio.sleep(4)
+    except asyncio.CancelledError:
+        pass
+
+
+async def _require_couple_context(update, context) -> dict | None:
+    """Garante que quem está falando está logado e num casal completo; senão orienta e devolve None."""
     ctx = await load_user_context(update, context)
     if not ctx:
         await update.message.reply_text(
@@ -41,90 +65,84 @@ async def handle_nl_message(update, context):
             "• /login — entrar com conta do site\n"
             "• /start — criar uma conta nova",
         )
-        return
+        return None
 
     if not ctx["couple_complete"]:
         await update.message.reply_text(
-            "Voce ainda nao esta em um casal. Use /start para configurar.",
+            "Você ainda não está em um casal. Use /start para configurar.",
         )
+        return None
+
+    return ctx
+
+
+async def handle_ai_message(update, context, text: str) -> None:
+    """Ponto único de entrada da Fin: recebe texto (digitado ou transcrito de áudio),
+    conversa com a IA e executa as ações que ela decidir via function-calling."""
+    ctx = await _require_couple_context(update, context)
+    if not ctx:
         return
 
-    parsed = parse_expense(update.message.text)
-    if not parsed:
-        await update.message.reply_text(
-            f"Oi, {ctx['user_name']}! Use os botoes do menu ou envie um gasto rapido.\n"
-            "Ex: '72 mercado' ou 'aluguel 2000'",
-            reply_markup=keyboards.main_menu(),
+    history: list[dict] = context.user_data.setdefault("_chat_history", [])
+
+    typing_task = asyncio.create_task(_typing_loop(context, update.effective_chat.id))
+    try:
+        result = await asyncio.to_thread(
+            ai_assistant_service.chat,
+            couple_id=ctx["couple_id"],
+            current_user_id=ctx["user_id"],
+            user_message=text,
+            history=history,
         )
+    except ai_assistant_service.OllamaUnavailable as exc:
+        await update.message.reply_text(f"⚠️ {exc}")
         return
+    finally:
+        typing_task.cancel()
 
-    if parsed.get("type") == "income":
-        transaction_service.add_transaction(
-            user_id=ctx["user_id"],
-            couple_id=ctx["couple_id"] if parsed.get("split_type") == "couple" else None,
-            paid_by_id=ctx["user_id"],
-            amount=parsed["amount"],
-            transaction_type="income",
-            scope="shared" if parsed.get("split_type") == "couple" else "personal",
-            category=parsed["category"],
-            description=parsed.get("description", ""),
-            transaction_date=parsed.get("date"),
-            source="telegram",
-            raw_message=update.message.text,
-        )
-        await update.message.reply_text(
-            f"✅ Receita de R$ {parsed['amount']:.2f} salva!",
-            reply_markup=keyboards.main_menu(),
-        )
-        return
+    reply = result["reply"]
+    history.append({"role": "user", "content": text})
+    history.append({"role": "assistant", "content": reply})
+    del history[:-10]
 
-    expense_service.add_expense(
-        couple_id=ctx["couple_id"],
-        paid_by_id=ctx["user_id"],
-        amount=parsed["amount"],
-        category=parsed["category"],
-        description=parsed.get("description", ""),
-        split_type=parsed.get("split_type", "couple"),
-        expense_date=parsed.get("date"),
-        source="telegram",
-    )
-
-    desc_line = f"\n_{parsed['description']}_" if parsed.get("description") else ""
-    scope_label = "do casal" if parsed.get("split_type") == "couple" else "pessoal"
-    await update.message.reply_text(
-        f"✅ R$ {parsed['amount']:.2f} em *{parsed['category']}* salvo como {scope_label}!{desc_line}",
-        parse_mode="Markdown",
-        reply_markup=keyboards.main_menu(),
-    )
+    await update.message.reply_text(reply)
 
     partner_telegram_id = ctx.get("partner_telegram_id")
-    if parsed.get("split_type") == "couple" and partner_telegram_id:
+    if partner_telegram_id and any(_should_notify_partner(a) for a in result.get("action_results", [])):
         await context.bot.send_message(
             chat_id=partner_telegram_id,
-            text=(
-                f"{ctx['user_name']} registrou R$ {parsed['amount']:.2f} "
-                f"em {parsed['category']} na carteira do casal."
-            ),
+            text=f"{ctx['user_name']} usou a Fin: {reply}",
         )
 
 
-async def handle_menu_callback(update, context):
-    query = update.callback_query
-    data = query.data
+async def handle_text_message(update, context) -> None:
+    if not update.message or not update.message.text:
+        return
+    await handle_ai_message(update, context, update.message.text)
 
-    if data == "menu:main":
-        await query.answer()
-        await query.edit_message_text("O que você quer fazer?", reply_markup=keyboards.main_menu())
-    elif data == "menu:bills":
-        await bills.show_bills(update, context)
-    elif data == "menu:goals":
-        await goals.show_goals(update, context)
-    elif data == "menu:summary":
-        await summary.show_summary(update, context)
-    elif data.startswith("bill:toggle:"):
-        await bills.toggle_bill(update, context)
-    elif data.startswith("goal:contrib:"):
-        await goals.start_contribution(update, context)
+
+async def handle_voice_message(update, context) -> None:
+    if not update.message or not (update.message.voice or update.message.audio):
+        return
+
+    ctx = await _require_couple_context(update, context)
+    if not ctx:
+        return
+
+    tg_file = update.message.voice or update.message.audio
+
+    typing_task = asyncio.create_task(_typing_loop(context, update.effective_chat.id, action="record_voice"))
+    try:
+        file = await context.bot.get_file(tg_file.file_id)
+        audio_bytes = bytes(await file.download_as_bytearray())
+        text = await asyncio.to_thread(audio_service.transcribe, audio_bytes, "voice.ogg")
+    except audio_service.TranscriptionUnavailable as exc:
+        await update.message.reply_text(f"🎙️⚠️ {exc}")
+        return
+    finally:
+        typing_task.cancel()
+
+    await handle_ai_message(update, context, text)
 
 
 def build_onboarding_handler() -> ConversationHandler:
@@ -142,55 +160,6 @@ def build_onboarding_handler() -> ConversationHandler:
         },
         fallbacks=[CommandHandler("cancel", onboarding.cancel)],
         allow_reentry=True,
-    )
-
-
-def build_expense_handler() -> ConversationHandler:
-    return ConversationHandler(
-        entry_points=[CallbackQueryHandler(expenses.start_expense, pattern="^menu:expense$")],
-        states={
-            EXP_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, expenses.receive_amount)],
-            EXP_CATEGORY: [CallbackQueryHandler(expenses.receive_category, pattern="^exp:cat:")],
-            EXP_PAID_BY: [CallbackQueryHandler(expenses.receive_paid_by, pattern="^exp:paid:")],
-            EXP_SPLIT: [
-                CallbackQueryHandler(expenses.receive_split, pattern="^exp:split:"),
-                CallbackQueryHandler(expenses.confirm_expense, pattern="^exp:(confirm|cancel)$"),
-            ],
-        },
-        fallbacks=[CommandHandler("cancel", expenses.cancel)],
-    )
-
-
-def build_bill_handler() -> ConversationHandler:
-    return ConversationHandler(
-        entry_points=[CallbackQueryHandler(bills.start_add_bill, pattern="^bill:new$")],
-        states={
-            BILL_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, bills.receive_bill_name)],
-            BILL_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, bills.receive_bill_amount)],
-            BILL_DUE_DAY: [MessageHandler(filters.TEXT & ~filters.COMMAND, bills.receive_bill_due_day)],
-        },
-        fallbacks=[CommandHandler("cancel", bills.cancel)],
-    )
-
-
-def build_goal_handler() -> ConversationHandler:
-    return ConversationHandler(
-        entry_points=[CallbackQueryHandler(goals.start_add_goal, pattern="^goal:new$")],
-        states={
-            GOAL_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, goals.receive_goal_name)],
-            GOAL_TARGET: [MessageHandler(filters.TEXT & ~filters.COMMAND, goals.receive_goal_target)],
-        },
-        fallbacks=[CommandHandler("cancel", goals.cancel)],
-    )
-
-
-def build_contrib_handler() -> ConversationHandler:
-    return ConversationHandler(
-        entry_points=[CallbackQueryHandler(goals.start_contribution, pattern="^goal:contrib:")],
-        states={
-            CONTRIB_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, goals.receive_contribution)],
-        },
-        fallbacks=[CommandHandler("cancel", goals.cancel)],
     )
 
 
@@ -245,27 +214,26 @@ async def handle_status(update, context):
         f"👤 *{ctx['user_name']}*\n"
         f"👫 Parceiro(a): {partner}\n"
         f"{status_icon} Casal: {'conectado' if ctx['couple_complete'] else 'incompleto'}\n\n"
-        "Use o menu abaixo:",
+        "Fale ou mande um áudio pra Fin — ela cuida do resto.",
         parse_mode="Markdown",
-        reply_markup=keyboards.main_menu(),
     )
 
 
 async def handle_help(update, context):
     await update.message.reply_text(
-        "🤖 *FinCouple Bot*\n\n"
+        "🤖 *FinCouple — Fin*\n\n"
+        "Fale ou mande um áudio 🎙️ que a Fin lança gastos, paga contas, cria metas, "
+        "gerencia categorias e explica seu resumo. Ex:\n"
+        "• `50 no mercado`\n"
+        "• `paguei a conta de luz`\n"
+        "• `quero juntar 3 mil pra viagem`\n"
+        "• `como está nosso mês?`\n\n"
         "*Comandos:*\n"
-        "/start — criar conta ou ver menu\n"
+        "/start — criar conta ou ver status\n"
         "/login — entrar com conta existente do site\n"
         "/logout — desvincular esta conta do Telegram\n"
         "/status — ver sua conta e casal\n"
-        "/cancel — cancelar operação atual\n\n"
-        "*Registro rápido de gastos:*\n"
-        "Basta enviar uma mensagem como:\n"
-        "• `50 mercado`\n"
-        "• `gastei 120 no restaurante`\n"
-        "• `uber 35`\n"
-        "• `aluguel 2000 casal`",
+        "/cancel — cancelar operação atual (onboarding/login)",
         parse_mode="Markdown",
     )
 
@@ -280,23 +248,19 @@ async def main():
     # Conversation handlers (order matters — more specific first)
     app.add_handler(build_login_handler())
     app.add_handler(build_onboarding_handler())
-    app.add_handler(build_expense_handler())
-    app.add_handler(build_bill_handler())
-    app.add_handler(build_goal_handler())
-    app.add_handler(build_contrib_handler())
 
     # Simple command handlers
     app.add_handler(CommandHandler("logout", handle_logout))
     app.add_handler(CommandHandler("status", handle_status))
     app.add_handler(CommandHandler("help", handle_help))
 
-    # Inline keyboard callbacks and free-text fallback
-    app.add_handler(CallbackQueryHandler(handle_menu_callback))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_nl_message))
+    # Tudo mais (texto livre e áudio) vai pra Fin
+    app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, handle_voice_message))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_message))
 
     # Register bot commands in Telegram menu
     await app.bot.set_my_commands([
-        ("start",  "Criar conta ou ver menu"),
+        ("start",  "Criar conta ou ver status"),
         ("login",  "Entrar com conta do site"),
         ("status", "Ver sua conta e casal"),
         ("logout", "Desvincular conta do Telegram"),

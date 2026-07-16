@@ -7,7 +7,7 @@ from backend.mongo_client import db
 from backend.jwt_auth import create_access_token
 from backend.auth import get_current_user
 from backend.password import hash_password, verify_password
-from backend.services import couple_service
+from backend.services import couple_service, password_reset_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -36,6 +36,15 @@ class EmailUpdate(BaseModel):
 
 
 class PasswordUpdate(BaseModel):
+    password: str
+
+
+class ForgotPasswordIn(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordIn(BaseModel):
+    token: str
     password: str
 
 
@@ -94,6 +103,27 @@ def login(data: LoginIn):
         "couple": couple,
         "session": {"access_token": token},
     }
+
+
+@router.post("/forgot-password")
+def forgot_password(data: ForgotPasswordIn):
+    try:
+        password_reset_service.request_password_reset(data.email)
+    except Exception as exc:
+        # Log server-side but never leak whether the email exists or SMTP failed
+        print(f"[forgot-password] falha ao enviar e-mail: {exc}")
+    return {"ok": True, "message": "Se o e-mail existir, enviamos um link de redefinicao."}
+
+
+@router.post("/reset-password")
+def reset_password(data: ResetPasswordIn):
+    if len(data.password) < 6:
+        raise HTTPException(400, "Senha deve ter ao menos 6 caracteres")
+    try:
+        password_reset_service.reset_password(data.token, data.password)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    return {"ok": True}
 
 
 @router.get("/me")

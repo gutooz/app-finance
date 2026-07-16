@@ -17,6 +17,7 @@ class ExpenseCreate(BaseModel):
     payer_amounts: Optional[dict[str, float]] = None
     date: Optional[date] = None
     source: str = "manual"
+    type: str = "expense"
 
 
 def _check_couple_access(couple_id: str, user_id: str) -> dict:
@@ -31,6 +32,8 @@ def _check_couple_access(couple_id: str, user_id: str) -> dict:
 @router.post("/")
 def add_expense(couple_id: str, data: ExpenseCreate, current_user: dict = Depends(get_current_user)):
     _check_couple_access(couple_id, current_user["id"])
+    if data.type not in ("income", "expense"):
+        raise HTTPException(400, "Tipo invalido")
     if data.split_type == "both" and data.payer_amounts:
         total_paid = sum(data.payer_amounts.values())
         if abs(total_paid - data.amount) > 0.01:
@@ -45,6 +48,7 @@ def add_expense(couple_id: str, data: ExpenseCreate, current_user: dict = Depend
         expense_date=data.date,
         source=data.source,
         payer_amounts=data.payer_amounts,
+        type=data.type,
     )
 
 

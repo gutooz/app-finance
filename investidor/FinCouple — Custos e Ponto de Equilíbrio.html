@@ -1,0 +1,489 @@
+<style>
+  :root{
+    --paper:#FBFAF6; --surface:#FFFFFF; --surface-2:#F4F1E9; --line:#E7E2D5; --line-strong:#D8D2C2;
+    --ink:#132229; --ink-2:#3C4C53; --muted:#697B82; --faint:#93A4AB;
+    --brand:#0E3A46;            /* deep teal — headers */
+    --money:#0E9E68;            /* growth green */
+    --money-soft:#E3F4EC;
+    --couple:#E8593F;           /* warm coral — the human side */
+    --couple-soft:#FBE6DF;
+    --warn:#B87513; --crit:#CC3E4C;
+    --grid:#ECE8DD;
+    --shadow:0 1px 2px rgba(19,34,41,.05), 0 8px 24px -12px rgba(19,34,41,.14);
+    --r:14px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --paper:#0D171C; --surface:#132229; --surface-2:#182B33; --line:#243A42; --line-strong:#2E454E;
+      --ink:#F1EEE4; --ink-2:#CBD5D8; --muted:#93A6AD; --faint:#6E838B;
+      --brand:#7FD6C9; --money:#3FE0A5; --money-soft:#12332B; --couple:#FF7A63; --couple-soft:#3A241F;
+      --warn:#E6A94B; --crit:#FF6B78; --grid:#22363E;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px -14px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="light"]{
+    --paper:#FBFAF6; --surface:#FFFFFF; --surface-2:#F4F1E9; --line:#E7E2D5; --line-strong:#D8D2C2;
+    --ink:#132229; --ink-2:#3C4C53; --muted:#697B82; --faint:#93A4AB; --brand:#0E3A46; --money:#0E9E68;
+    --money-soft:#E3F4EC; --couple:#E8593F; --couple-soft:#FBE6DF; --warn:#B87513; --crit:#CC3E4C; --grid:#ECE8DD;
+  }
+  :root[data-theme="dark"]{
+    --paper:#0D171C; --surface:#132229; --surface-2:#182B33; --line:#243A42; --line-strong:#2E454E;
+    --ink:#F1EEE4; --ink-2:#CBD5D8; --muted:#93A6AD; --faint:#6E838B; --brand:#7FD6C9; --money:#3FE0A5;
+    --money-soft:#12332B; --couple:#FF7A63; --couple-soft:#3A241F; --warn:#E6A94B; --crit:#FF6B78; --grid:#22363E;
+  }
+
+  *{box-sizing:border-box}
+  .deck{
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    color:var(--ink); background:var(--paper);
+    -webkit-font-smoothing:antialiased; line-height:1.5;
+    font-variant-numeric:tabular-nums;
+    --colw:900px;
+  }
+  .deck h1,.deck h2,.deck h3,.deck p,.deck ul{margin:0}
+  .num{font-variant-numeric:tabular-nums; letter-spacing:-.01em}
+
+  /* ---- page / section rhythm ---- */
+  .sheet{max-width:var(--colw); margin:0 auto; padding:44px 40px}
+  .section + .section{border-top:1px solid var(--line)}
+  .eyebrow{font-size:11px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--couple)}
+  .eyebrow.brand{color:var(--brand)}
+  .h-sec{font-size:27px; font-weight:800; letter-spacing:-.02em; text-wrap:balance; margin-top:8px; color:var(--ink)}
+  .lead{color:var(--ink-2); font-size:15px; max-width:62ch; margin-top:10px}
+  .kicker{color:var(--muted); font-size:13.5px}
+
+  /* ---- cover ---- */
+  /* cover is a committed dark hero — fixed colors, identical in light & dark themes */
+  .cover{background:
+      radial-gradient(120% 90% at 88% -10%, rgba(63,224,165,.18), transparent 60%),
+      radial-gradient(120% 90% at -8% 110%, rgba(232,89,63,.20), transparent 55%),
+      #0E3A46;
+    color:#F3F7F5; padding:0}
+  .cover .sheet{padding:52px 40px 44px}
+  .cover .wordmark{display:flex; align-items:center; gap:11px; font-weight:800; letter-spacing:-.01em; font-size:18px; color:#fff}
+  .heart{width:26px;height:26px; border-radius:8px; display:grid;place-items:center; background:linear-gradient(135deg,var(--couple),#ff9a6b); color:#fff; font-size:14px}
+  .cover h1{font-size:44px; line-height:1.04; font-weight:800; letter-spacing:-.03em; margin-top:26px; text-wrap:balance; color:#fff}
+  .cover h1 em{font-style:normal; color:#8ff0c8}
+  .cover .sub{color:#C7D8D6; font-size:16px; margin-top:16px; max-width:56ch}
+  .cover-tags{display:flex; flex-wrap:wrap; gap:8px; margin-top:22px}
+  .ctag{font-size:12px; font-weight:600; color:#E7F0EE; border:1px solid rgba(255,255,255,.24); padding:5px 11px; border-radius:999px; background:rgba(255,255,255,.05)}
+  .cover-hero{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:34px}
+  .hero-stat{background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.16); border-radius:var(--r); padding:16px 18px}
+  .hero-stat .v{font-size:30px; font-weight:800; letter-spacing:-.02em; color:#fff}
+  .hero-stat .v.green{color:#8ff0c8}
+  .hero-stat .l{font-size:12px; color:#B9CBC9; margin-top:4px; line-height:1.35}
+  .foot-note{color:#93AAA8; font-size:11.5px; margin-top:20px}
+
+  /* ---- cards / grids ---- */
+  .grid{display:grid; gap:14px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:16px 17px; box-shadow:var(--shadow)}
+  .card.flat{box-shadow:none; background:var(--surface-2); border-color:var(--line)}
+  .stat .v{font-size:26px; font-weight:800; letter-spacing:-.02em}
+  .stat .l{font-size:12.5px; color:var(--muted); margin-top:3px}
+  .stat .d{font-size:12px; color:var(--ink-2); margin-top:8px; line-height:1.4}
+  .v.green{color:var(--money)} .v.coral{color:var(--couple)} .v.brandc{color:var(--brand)}
+
+  /* ---- system inventory ---- */
+  .sys{display:flex; align-items:flex-start; gap:12px; padding:12px 0; border-top:1px solid var(--line)}
+  .sys:first-child{border-top:0}
+  .sys .ic{width:34px;height:34px;border-radius:9px;flex:0 0 34px; display:grid;place-items:center; font-size:15px; background:var(--surface-2); border:1px solid var(--line)}
+  .sys .body{flex:1}
+  .sys .t{font-weight:700; font-size:14.5px}
+  .sys .desc{font-size:12.5px; color:var(--muted); margin-top:2px}
+  .pill{font-size:11px; font-weight:700; padding:3px 9px; border-radius:999px; white-space:nowrap; letter-spacing:.01em}
+  .pill.free{color:var(--money); background:var(--money-soft); border:1px solid color-mix(in srgb,var(--money) 30%,transparent)}
+  .pill.paid{color:var(--couple); background:var(--couple-soft); border:1px solid color-mix(in srgb,var(--couple) 32%,transparent)}
+  .pill.mix{color:var(--warn); background:color-mix(in srgb,var(--warn) 14%,transparent); border:1px solid color-mix(in srgb,var(--warn) 32%,transparent)}
+
+  /* ---- cost table + composition bars ---- */
+  table.cost{width:100%; border-collapse:collapse; font-size:13.5px}
+  table.cost th{text-align:left; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:700; padding:0 0 9px}
+  table.cost th.r,table.cost td.r{text-align:right}
+  table.cost td{padding:9px 0; border-top:1px solid var(--line); vertical-align:middle}
+  table.cost .svc{color:var(--muted); font-size:12px}
+  table.cost tr .it{font-weight:600}
+  table.cost tfoot td{border-top:2px solid var(--line-strong); font-weight:800; padding-top:11px}
+
+  .compbar{display:flex; flex-direction:column; gap:9px}
+  .compbar .row{display:grid; grid-template-columns:150px 1fr auto; align-items:center; gap:12px; font-size:12.5px}
+  .compbar .name{color:var(--ink-2); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .compbar .track{height:16px; background:var(--surface-2); border-radius:5px; overflow:hidden}
+  .compbar .fill{height:100%; border-radius:5px}
+  .compbar .val{color:var(--ink); font-weight:700; min-width:82px; text-align:right}
+
+  /* waterfall */
+  .wf{display:flex; flex-direction:column; gap:8px}
+  .wf .row{display:grid; grid-template-columns:180px 1fr 96px; gap:12px; align-items:center; font-size:13px}
+  .wf .lab{color:var(--ink-2)}
+  .wf .bartrack{position:relative; height:22px}
+  .wf .seg{position:absolute; top:0; height:22px; border-radius:4px}
+  .wf .amt{text-align:right; font-weight:700}
+  .amt.neg{color:var(--couple)} .amt.pos{color:var(--money)}
+
+  ul.ticks{list-style:none; padding:0; display:flex; flex-direction:column; gap:9px; margin-top:4px}
+  ul.ticks li{position:relative; padding-left:24px; font-size:13.5px; color:var(--ink-2); line-height:1.45}
+  ul.ticks li::before{content:""; position:absolute; left:2px; top:7px; width:9px; height:9px; border-radius:3px; background:var(--money)}
+  ul.ticks li.c::before{background:var(--couple)}
+  ul.ticks li b{color:var(--ink)}
+
+  .callout{background:var(--surface-2); border:1px solid var(--line); border-left:3px solid var(--couple); border-radius:10px; padding:13px 15px; font-size:13px; color:var(--ink-2)}
+  .callout b{color:var(--ink)}
+
+  /* scenarios */
+  .scen{padding:18px; border-radius:var(--r); border:1px solid var(--line); background:var(--surface); box-shadow:var(--shadow); display:flex; flex-direction:column; gap:12px}
+  .scen.hi{border-color:color-mix(in srgb,var(--money) 45%,transparent); background:linear-gradient(180deg,var(--money-soft),var(--surface) 42%)}
+  .scen .tag{font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+  .scen .cnt{font-size:22px; font-weight:800; letter-spacing:-.02em; margin-top:2px}
+  .scen .profit{font-size:28px; font-weight:800; color:var(--money); letter-spacing:-.02em}
+  .scen .plabel{font-size:11.5px; color:var(--muted)}
+  .scen .mini{display:flex; flex-direction:column; gap:6px; font-size:12px; color:var(--ink-2)}
+  .scen .mini .l{display:flex; justify-content:space-between}
+  .scen .mini .l span:last-child{font-weight:700; color:var(--ink)}
+  .gauge{height:8px; border-radius:5px; background:var(--surface-2); overflow:hidden; margin-top:2px}
+  .gauge > i{display:block; height:100%; background:var(--money); border-radius:5px}
+
+  .legend{display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--ink-2); margin-top:4px}
+  .legend .k{display:inline-flex; align-items:center; gap:7px}
+  .legend .sw{width:22px;height:0; border-top-width:3px; border-top-style:solid; border-radius:2px}
+
+  .assump{font-size:12px; color:var(--muted); line-height:1.55}
+  .assump b{color:var(--ink-2)}
+  .two{display:grid; grid-template-columns:1.15fr .85fr; gap:22px; align-items:start}
+
+  a.src{color:var(--brand); text-decoration:none; border-bottom:1px solid var(--line-strong)}
+
+  @media (max-width:760px){
+    .g2,.g3,.g4,.two,.cover-hero{grid-template-columns:1fr}
+    .cover h1{font-size:34px}
+    .compbar .row{grid-template-columns:110px 1fr auto}
+    .wf .row{grid-template-columns:120px 1fr 80px}
+    .sheet{padding:32px 20px}
+  }
+
+  /* ---------- PRINT (PDF) ---------- */
+  @media print{
+    @page{ size:A4; margin:13mm 12mm; }
+    .deck{background:#fff; --paper:#fff}
+    .section{page-break-before:always; border-top:0!important}
+    .section.cover{page-break-before:avoid}
+    .card,.scen,.sys,.figure,table.cost,.callout,.two,.compbar,.wf{break-inside:avoid; page-break-inside:avoid}
+    .no-print{display:none}
+    *{-webkit-print-color-adjust:exact; print-color-adjust:exact}
+    .sheet{max-width:none; padding:0}
+    .cover .sheet{padding:8mm}
+  }
+
+  .figure{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:16px 18px 12px; box-shadow:var(--shadow)}
+  .figure .cap{font-size:12px; color:var(--muted); margin-top:6px}
+  svg{display:block; width:100%; height:auto}
+  .axislab{fill:var(--muted); font-size:11px; font-family:system-ui,sans-serif}
+  .dlabel{font-size:12px; font-weight:700; font-family:system-ui,sans-serif}
+</style>
+
+<div class="deck">
+
+  <!-- ============ COVER ============ -->
+  <section class="section cover">
+    <div class="sheet">
+      <div class="wordmark"><span class="heart">&#10084;</span> FinCouple</div>
+      <div class="eyebrow" style="color:#8ff0c8; margin-top:30px">Apresentação de custos &amp; ponto de equilíbrio</div>
+      <h1>Quanto custa colocar o app no ar &mdash; e <em>quantos casais</em> para ele se pagar.</h1>
+      <p class="sub">Finanças compartilhadas para casais, com Open Finance, bots de WhatsApp e Telegram, empacotado como app nativo de iOS e Android. Este documento abre <b>todos</b> os custos de infraestrutura, APIs e lojas, e mostra a economia por casal.</p>
+
+      <div class="cover-hero">
+        <div class="hero-stat">
+          <div class="v green">~63</div>
+          <div class="l">casais pagantes para o app se pagar (cobrir todo o custo fixo)</div>
+        </div>
+        <div class="hero-stat">
+          <div class="v">R$&nbsp;648<span style="font-size:15px;font-weight:600;color:#B9CBC9">/mês</span></div>
+          <div class="l">custo fixo para rodar em produção, servidor de verdade</div>
+        </div>
+        <div class="hero-stat">
+          <div class="v green">52%</div>
+          <div class="l">margem de contribuição por casal pagante (R$&nbsp;10,41 de R$&nbsp;19,90)</div>
+        </div>
+      </div>
+
+      <div class="cover-tags">
+        <span class="ctag">React + Capacitor &rarr; iOS / Android</span>
+        <span class="ctag">FastAPI (Python)</span>
+        <span class="ctag">MongoDB Atlas</span>
+        <span class="ctag">Pluggy &middot; Open Finance</span>
+        <span class="ctag">WhatsApp &middot; Telegram</span>
+      </div>
+      <p class="foot-note">Valores em BRL, câmbio de referência US$&nbsp;1&nbsp;&asymp;&nbsp;R$&nbsp;5,40. Premissas e faixas de preço detalhadas na última página. Preparado em julho/2026.</p>
+    </div>
+  </section>
+
+  <!-- ============ 1. STACK / SISTEMAS ============ -->
+  <section class="section">
+    <div class="sheet">
+      <div class="eyebrow brand">O que está no ar</div>
+      <h2 class="h-sec">Todos os sistemas e APIs que o app usa</h2>
+      <p class="lead">O produto é montado com peças gerenciadas para custo baixo no início. Abaixo, cada componente e se ele é <span style="color:var(--money);font-weight:700">gratuito</span>, <span style="color:var(--warn);font-weight:700">misto</span> ou <span style="color:var(--couple);font-weight:700">pago por uso</span>.</p>
+
+      <div class="grid g2" style="margin-top:20px">
+        <div class="card">
+          <div class="sys"><div class="ic">&#128241;</div><div class="body"><div class="t">App iOS &amp; Android <span class="pill free" style="float:right">grátis p/ rodar</span></div><div class="desc">React 19 + Vite + Tailwind empacotado com Capacitor. Um único código vira app nativo nas duas lojas.</div></div></div>
+          <div class="sys"><div class="ic">&#9881;&#65039;</div><div class="body"><div class="t">Backend / API <span class="pill mix" style="float:right">grátis &rarr; pago</span></div><div class="desc">FastAPI (Python) rodando na Vercel, sem servidor dedicado. Escala sob demanda; plano pago ao crescer o tráfego.</div></div></div>
+          <div class="sys"><div class="ic">&#128451;&#65039;</div><div class="body"><div class="t">Banco de dados <span class="pill paid" style="float:right">pago</span></div><div class="desc">MongoDB Atlas gerenciado, com cópia de segurança automática. Servidor dedicado em produção.</div></div></div>
+          <div class="sys"><div class="ic">&#128273;</div><div class="body"><div class="t">Autenticação <span class="pill free" style="float:right">grátis</span></div><div class="desc">Login próprio com JWT + bcrypt. Sem custo de provedor externo.</div></div></div>
+        </div>
+        <div class="card">
+          <div class="sys"><div class="ic">&#127974;</div><div class="body"><div class="t">Pluggy &middot; Open Finance <span class="pill paid" style="float:right">pago por uso</span></div><div class="desc">Conexão com as contas bancárias do casal. É o <b>principal custo variável</b> &mdash; cobrado por conexão ativa.</div></div></div>
+          <div class="sys"><div class="ic">&#128172;</div><div class="body"><div class="t">Bot de WhatsApp <span class="pill mix" style="float:right">custo de VPS</span></div><div class="desc">Evolution API hospedada em servidor próprio (Docker + Postgres + Redis).</div></div></div>
+          <div class="sys"><div class="ic">&#9993;&#65039;</div><div class="body"><div class="t">Bot de Telegram <span class="pill free" style="float:right">grátis</span></div><div class="desc">Lançamentos por mensagem. API do Telegram sem custo.</div></div></div>
+          <div class="sys"><div class="ic">&#128640;</div><div class="body"><div class="t">Compilação &amp; entrega (CI/CD) <span class="pill mix" style="float:right">grátis &rarr; pago</span></div><div class="desc">Codemagic compila os apps iOS/Android. Camada gratuita cobre o começo.</div></div></div>
+        </div>
+      </div>
+      <div class="callout" style="margin-top:16px"><b>Leitura rápida:</b> quase toda a arquitetura começa em camada gratuita. Os dois cheques que sempre chegam são o <b>banco de dados</b> (custo fixo) e o <b>Pluggy / Open Finance</b> (cresce com o número de casais).</div>
+    </div>
+  </section>
+
+  <!-- ============ 2. CUSTO FIXO ============ -->
+  <section class="section">
+    <div class="sheet">
+      <div class="eyebrow brand">Custo fixo mensal</div>
+      <h2 class="h-sec">Rodando em produção &mdash; servidor de verdade</h2>
+      <p class="lead">O que sai da conta todo mês independentemente de ter 1 ou 500 casais. Postura conservadora: banco dedicado, servidor próprio para o WhatsApp e monitoramento.</p>
+
+      <div class="two" style="margin-top:20px">
+        <div class="card">
+          <table class="cost">
+            <thead><tr><th>Item</th><th>Serviço</th><th class="r">R$/mês</th></tr></thead>
+            <tbody>
+              <tr><td class="it">Banco de dados<div class="svc">MongoDB Atlas M10 dedicado</div></td><td></td><td class="r num">340</td></tr>
+              <tr><td class="it">Backend / API<div class="svc">Vercel Pro (sem servidor dedicado)</div></td><td></td><td class="r num">108</td></tr>
+              <tr><td class="it">Servidor WhatsApp<div class="svc">VPS + Postgres + Redis</div></td><td></td><td class="r num">90</td></tr>
+              <tr><td class="it">Apple Developer<div class="svc">US$ 99/ano, amortizado</div></td><td></td><td class="r num">45</td></tr>
+              <tr><td class="it">Observabilidade<div class="svc">Sentry + logs</div></td><td></td><td class="r num">45</td></tr>
+              <tr><td class="it">CDN + domínio + SSL<div class="svc">Cloudflare + registro</div></td><td></td><td class="r num">15</td></tr>
+              <tr><td class="it">Google Play<div class="svc">US$ 25 único, amortizado</div></td><td></td><td class="r num">5</td></tr>
+              <tr><td class="it">Telegram &middot; E-mail &middot; Push<div class="svc">Telegram / Resend / APNs · FCM</div></td><td></td><td class="r num">0</td></tr>
+            </tbody>
+            <tfoot><tr><td class="it">Total fixo</td><td></td><td class="r num">R$ 648</td></tr></tfoot>
+          </table>
+        </div>
+
+        <div class="figure">
+          <div class="eyebrow brand" style="color:var(--muted)">Composição do custo fixo</div>
+          <div class="compbar" style="margin-top:14px">
+            <div class="row"><span class="name">Banco de dados</span><span class="track"><i class="fill" style="width:100%;background:#0E3A46"></i></span><span class="val">52%</span></div>
+            <div class="row"><span class="name">Backend / API</span><span class="track"><i class="fill" style="width:32%;background:#12695F"></i></span><span class="val">17%</span></div>
+            <div class="row"><span class="name">Servidor WhatsApp</span><span class="track"><i class="fill" style="width:26%;background:#0E9E68"></i></span><span class="val">14%</span></div>
+            <div class="row"><span class="name">Apple Developer</span><span class="track"><i class="fill" style="width:13%;background:#37B47E"></i></span><span class="val">7%</span></div>
+            <div class="row"><span class="name">Observabilidade</span><span class="track"><i class="fill" style="width:13%;background:#5FC79A"></i></span><span class="val">7%</span></div>
+            <div class="row"><span class="name">CDN + domínio</span><span class="track"><i class="fill" style="width:5%;background:#8AD8B7"></i></span><span class="val">2%</span></div>
+            <div class="row"><span class="name">Google Play</span><span class="track"><i class="fill" style="width:2%;background:#B4E6CE"></i></span><span class="val">1%</span></div>
+          </div>
+          <div class="cap">O banco de dados sozinho é metade do custo fixo. No arranque, dá para começar em camadas gratuitas (Atlas free + Vercel Hobby) e cair para <b>~R$ 150/mês</b> &mdash; aqui usamos a postura de produção, mais defensável.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 3. CUSTO VARIÁVEL + ÚNICOS ============ -->
+  <section class="section">
+    <div class="sheet">
+      <div class="eyebrow">Custo por uso &amp; custos únicos</div>
+      <h2 class="h-sec">O que cresce com cada casal &mdash; e o que se paga uma vez</h2>
+
+      <div class="grid g3" style="margin-top:20px">
+        <div class="card stat"><div class="l">Open Finance (Pluggy)</div><div class="v coral num">R$ 6,00</div><div class="d">por casal/mês &mdash; estimando 2 conexões bancárias ativas a ~R$ 3 cada. É o custo que mais pesa na margem.</div></div>
+        <div class="card stat"><div class="l">Processamento + banco (marginal)</div><div class="v coral num">R$ 0,50</div><div class="d">por casal/mês &mdash; processamento e armazenamento adicionais. WhatsApp/Telegram têm custo marginal ~zero.</div></div>
+        <div class="card stat"><div class="l">Custo variável total</div><div class="v coral num">R$ 6,50</div><div class="d">por casal pagante/mês. É o que subtraímos da receita para achar a margem.</div></div>
+      </div>
+
+      <div class="grid g4" style="margin-top:14px">
+        <div class="card flat stat"><div class="l">Apple Developer (1º ano)</div><div class="v num">R$ 545</div><div class="d">US$ 99/ano, obrigatório p/ App Store.</div></div>
+        <div class="card flat stat"><div class="l">Google Play</div><div class="v num">R$ 137</div><div class="d">US$ 25, taxa única vitalícia.</div></div>
+        <div class="card flat stat"><div class="l">Domínio (1º ano)</div><div class="v num">R$ 40</div><div class="d">registro .com / .com.br.</div></div>
+        <div class="card flat stat"><div class="l">Jurídico &amp; marca</div><div class="v num">variável</div><div class="d">LGPD, termos de uso, identidade.</div></div>
+      </div>
+
+      <div class="callout" style="margin-top:16px"><b>Atenção ao Pluggy:</b> planos de produção de Open Finance costumam ter um <b>mínimo mensal</b>. Enquanto a base é pequena, esse piso encarece o custo por casal; ele se dilui rápido e, em escala, o preço por conexão cai por volume &mdash; empurrando a margem para cima.</div>
+    </div>
+  </section>
+
+  <!-- ============ 4. UNIT ECONOMICS ============ -->
+  <section class="section">
+    <div class="sheet">
+      <div class="eyebrow">Economia por casal</div>
+      <h2 class="h-sec">De R$ 19,90 na loja a R$ 10,41 de margem</h2>
+      <p class="lead">Modelo freemium: o casal usa de graça e assina o <b>Premium</b> por R$ 19,90/mês (ou R$ 199/ano) para liberar o Open Finance, os bots e os relatórios. Veja para onde vai cada real.</p>
+
+      <div class="two" style="margin-top:20px">
+        <div class="figure">
+          <div class="eyebrow" style="color:var(--muted)">Cascata da mensalidade Premium</div>
+          <div class="wf" style="margin-top:16px">
+            <div class="row"><span class="lab">Preço de tabela</span><span class="bartrack"><i class="seg" style="left:0;width:100%;background:var(--brand)"></i></span><span class="amt num">R$ 19,90</span></div>
+            <div class="row"><span class="lab">Taxa da loja (15%)</span><span class="bartrack"><i class="seg" style="left:85%;width:15%;background:var(--couple)"></i></span><span class="amt neg num">&minus; 2,99</span></div>
+            <div class="row"><span class="lab">Pluggy (Open Finance)</span><span class="bartrack"><i class="seg" style="left:55%;width:30%;background:var(--couple)"></i></span><span class="amt neg num">&minus; 6,00</span></div>
+            <div class="row"><span class="lab">Processamento + banco</span><span class="bartrack"><i class="seg" style="left:52.5%;width:2.5%;background:var(--couple)"></i></span><span class="amt neg num">&minus; 0,50</span></div>
+            <div class="row"><span class="lab" style="font-weight:700;color:var(--ink)">Margem de contribuição</span><span class="bartrack"><i class="seg" style="left:0;width:52.5%;background:var(--money)"></i></span><span class="amt pos num">R$ 10,41</span></div>
+          </div>
+          <div class="cap">Cada casal pagante deixa <b>R$ 10,41</b> para cobrir o custo fixo e, depois, virar lucro. Isso é <b>52%</b> do preço de tabela.</div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="card stat"><div class="l">Receita líquida por casal</div><div class="v brandc num">R$ 16,91</div><div class="d">R$ 19,90 menos a taxa de 15% da loja (Programa Small Business, receita &lt; US$ 1 mi/ano).</div></div>
+          <div class="card stat"><div class="l">Margem de contribuição</div><div class="v green num">R$ 10,41</div><div class="d">Receita líquida menos R$ 6,50 de custo variável. É a alavanca do ponto de equilíbrio.</div></div>
+          <div class="callout" style="border-left-color:var(--money)"><b>Por que isso importa:</b> como a margem é positiva e alta (52%), cada novo casal pagante <b>acelera</b> o lucro. O negócio não depende de volume gigante para fechar a conta.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 5. BREAK-EVEN ============ -->
+  <section class="section">
+    <div class="sheet">
+      <div class="eyebrow">Ponto de equilíbrio</div>
+      <h2 class="h-sec">Quantos casais para o app começar a se pagar</h2>
+
+      <div class="two" style="margin-top:20px">
+        <div class="figure">
+          <div class="eyebrow" style="color:var(--muted)">Receita líquida &times; custo total por nº de casais pagantes</div>
+          <svg viewBox="0 0 720 360" role="img" aria-label="Gráfico de ponto de equilíbrio: a receita cruza o custo em cerca de 63 casais">
+            <!-- grid -->
+            <g stroke="var(--grid)" stroke-width="1">
+              <line x1="60" y1="45" x2="700" y2="45"/><line x1="60" y1="120" x2="700" y2="120"/>
+              <line x1="60" y1="195" x2="700" y2="195"/><line x1="60" y1="270" x2="700" y2="270"/>
+              <line x1="60" y1="320" x2="700" y2="320"/>
+            </g>
+            <!-- y labels -->
+            <g class="axislab" text-anchor="end">
+              <text x="52" y="49">2.600</text><text x="52" y="124">1.950</text>
+              <text x="52" y="199">1.300</text><text x="52" y="274">650</text><text x="52" y="324">0</text>
+            </g>
+            <!-- x labels -->
+            <g class="axislab" text-anchor="middle">
+              <text x="60" y="338">0</text><text x="325" y="338">63</text><text x="486" y="338">100</text><text x="700" y="338">150 casais</text>
+            </g>
+            <!-- loss region -->
+            <polygon points="60,245 325,199 60,320" fill="var(--couple)" opacity="0.10"/>
+            <!-- profit region -->
+            <polygon points="325,199 700,27 700,133" fill="var(--money)" opacity="0.14"/>
+            <!-- cost line (dashed) -->
+            <polyline points="60,245 700,133" fill="none" stroke="var(--couple)" stroke-width="2.5" stroke-dasharray="7 5"/>
+            <!-- revenue line (solid) -->
+            <polyline points="60,320 700,27" fill="none" stroke="var(--money)" stroke-width="2.75"/>
+            <!-- crossing -->
+            <circle cx="325" cy="199" r="5.5" fill="var(--money)" stroke="var(--surface)" stroke-width="2"/>
+            <line x1="325" y1="199" x2="325" y2="320" stroke="var(--ink)" stroke-width="1" stroke-dasharray="3 4" opacity="0.5"/>
+            <!-- direct labels -->
+            <text class="dlabel" x="675" y="20" text-anchor="end" fill="var(--money)">Receita</text>
+            <text class="dlabel" x="675" y="150" text-anchor="end" fill="var(--couple)">Custo total</text>
+            <text class="dlabel" x="333" y="188" fill="var(--ink)">Equilíbrio &asymp; 63</text>
+          </svg>
+          <div class="legend">
+            <span class="k"><span class="sw" style="border-top-color:var(--money)"></span> Receita líquida (R$ 16,91/casal)</span>
+            <span class="k"><span class="sw" style="border-top-color:var(--couple); border-top-style:dashed"></span> Custo total (R$ 648 fixo + R$ 6,50/casal)</span>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="card stat" style="border-color:color-mix(in srgb,var(--money) 40%,transparent)"><div class="l">Ponto de equilíbrio</div><div class="v green num">63 casais</div><div class="d">pagantes/mês cobrem 100% do custo fixo. A partir do 64º, cada casal é lucro.</div></div>
+          <div class="card stat"><div class="l">Traduzindo em cadastros</div><div class="v brandc num">~1.260</div><div class="d">casais cadastrados, assumindo 5% de conversão de gratuito para pagante. A 10%, bastam ~630.</div></div>
+          <ul class="ticks">
+            <li><b>Meta alcançável</b> em ~4 a 6 meses com marketing modesto e indicação (o produto é para dois &mdash; cada casal traz outro).</li>
+            <li class="c">Abaixo de 63 pagantes o negócio ainda opera com <b>prejuízo baixo</b> (no máximo ~R$ 648/mês), risco financeiro pequeno.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 6. CENÁRIOS ============ -->
+  <section class="section">
+    <div class="sheet">
+      <div class="eyebrow brand">Projeção</div>
+      <h2 class="h-sec">Três cenários &mdash; do arranque à escala</h2>
+      <p class="lead">Mesma economia por casal, em três tamanhos de base pagante. O custo fixo cresce bem devagar; a margem por casal se mantém, então o lucro dispara com o volume.</p>
+
+      <div class="grid g3" style="margin-top:20px">
+        <div class="scen">
+          <div><div class="tag">Arranque &middot; ~mês 6</div><div class="cnt num">100 casais pagantes</div></div>
+          <div><div class="profit num">R$ 393</div><div class="plabel">lucro/mês &middot; margem 20%</div></div>
+          <div class="mini">
+            <div class="l"><span>Receita bruta</span><span class="num">R$ 1.990</span></div>
+            <div class="l"><span>Custo variável</span><span class="num">R$ 650</span></div>
+            <div class="l"><span>Custo fixo</span><span class="num">R$ 648</span></div>
+          </div>
+          <div><div class="gauge"><i style="width:20%"></i></div></div>
+        </div>
+
+        <div class="scen">
+          <div><div class="tag">Tração &middot; ~mês 18</div><div class="cnt num">1.000 casais pagantes</div></div>
+          <div><div class="profit num">R$ 9.015</div><div class="plabel">lucro/mês &middot; margem 45%</div></div>
+          <div class="mini">
+            <div class="l"><span>Receita bruta</span><span class="num">R$ 19.900</span></div>
+            <div class="l"><span>Custo variável</span><span class="num">R$ 6.500</span></div>
+            <div class="l"><span>Custo fixo</span><span class="num">R$ 1.400</span></div>
+          </div>
+          <div><div class="gauge"><i style="width:45%"></i></div></div>
+        </div>
+
+        <div class="scen hi">
+          <div><div class="tag">Escala &middot; ~mês 36</div><div class="cnt num">10.000 casais pagantes</div></div>
+          <div><div class="profit num">R$ 98.150</div><div class="plabel">lucro/mês &middot; margem 49%</div></div>
+          <div class="mini">
+            <div class="l"><span>Receita bruta</span><span class="num">R$ 199.000</span></div>
+            <div class="l"><span>Custo variável</span><span class="num">R$ 65.000</span></div>
+            <div class="l"><span>Custo fixo</span><span class="num">R$ 6.000</span></div>
+          </div>
+          <div><div class="gauge"><i style="width:49%"></i></div></div>
+        </div>
+      </div>
+
+      <div class="grid g3" style="margin-top:14px">
+        <div class="card flat stat"><div class="l">Receita recorrente anual (escala)</div><div class="v brandc num">R$ 2,39 mi</div><div class="d">ARR bruto com 10 mil casais no Premium.</div></div>
+        <div class="card flat stat"><div class="l">Lucro anualizado (escala)</div><div class="v green num">R$ 1,18 mi</div><div class="d">~R$ 98 mil/mês &times; 12, antes de impostos e marketing.</div></div>
+        <div class="card flat stat"><div class="l">Margem na escala</div><div class="v green num">49%</div><div class="d">Tende a subir: preço do Pluggy cai por volume.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 7. RESUMO / PREMISSAS ============ -->
+  <section class="section">
+    <div class="sheet">
+      <div class="eyebrow brand">Resumo para o investidor</div>
+      <h2 class="h-sec">Baixo custo para operar, ponto de equilíbrio ao alcance</h2>
+
+      <div class="two" style="margin-top:20px">
+        <div>
+          <ul class="ticks">
+            <li>Rodar em produção custa <b>R$ 648/mês</b>. Não é um negócio que queima caixa para existir.</li>
+            <li>Cada casal pagante deixa <b>R$ 10,41</b> de margem (52%). A economia unitária é saudável desde o dia 1.</li>
+            <li>O app se paga com <b>~63 casais pagantes</b> &mdash; ~1.260 cadastros a 5% de conversão.</li>
+            <li>Com <b>1.000</b> pagantes o lucro é ~R$ 9 mil/mês; com <b>10.000</b>, ~R$ 98 mil/mês (ARR ~R$ 2,4 mi).</li>
+            <li class="c">O maior custo variável (Pluggy) <b>cai por volume</b> &mdash; a margem melhora conforme a base cresce.</li>
+          </ul>
+
+          <div class="callout" style="margin-top:18px;border-left-color:var(--money)">
+            <b>O pedido.</b> O capital não é para manter o servidor de pé &mdash; isso é barato. É para <b>aquisição de casais</b> (marketing e indicação) e ~12 meses de fôlego até a base cruzar o ponto de equilíbrio com folga.
+          </div>
+        </div>
+
+        <div class="card flat">
+          <div class="eyebrow" style="color:var(--muted)">Premissas &amp; ressalvas</div>
+          <p class="assump" style="margin-top:12px">
+            &bull; Câmbio US$ 1 &asymp; <b>R$ 5,40</b>.<br>
+            &bull; Preço Premium <b>R$ 19,90/mês</b>; taxa de loja de <b>15%</b> (Small Business Program, receita &lt; US$ 1 mi/ano; acima disso, 30%).<br>
+            &bull; Pluggy modelado a <b>R$ 3/conexão</b> &times; 2 conexões por casal; planos reais têm mínimo mensal e desconto por volume &mdash; a confirmar em contrato.<br>
+            &bull; Custo fixo é postura de produção; no arranque cai para <b>~R$ 150/mês</b> em camadas gratuitas.<br>
+            &bull; Conversão gratuito&rarr;pago assumida em <b>5%</b>; a referência de mercado (modelo freemium) fica entre 2% e 10%.<br>
+            &bull; Não incluídos: impostos, salários, CAC e jurídico &mdash; dependem da estratégia de captação.
+          </p>
+          <p class="assump" style="margin-top:12px;color:var(--faint)">Estimativas para fins de apresentação. Números de custo de terceiros (Pluggy, Atlas, Vercel) devem ser confirmados nos contratos vigentes antes de decisões de investimento.</p>
+        </div>
+      </div>
+
+      <p class="kicker" style="margin-top:26px;text-align:center">FinCouple &middot; Apresentação de custos e ponto de equilíbrio &middot; julho/2026</p>
+    </div>
+  </section>
+
+</div>

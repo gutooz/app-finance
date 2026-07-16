@@ -24,6 +24,13 @@ def get_monthly_summary(couple_id: str, month: int, year: int) -> dict:
     expenses = list(db.expenses.find({
         "couple_id": ObjectId(couple_id),
         "date": {"$gte": start, "$lte": end},
+        "type": {"$ne": "income"},
+    }))
+
+    income_total = sum(float(i["amount"]) for i in db.expenses.find({
+        "couple_id": ObjectId(couple_id),
+        "date": {"$gte": start, "$lte": end},
+        "type": "income",
     }))
 
     total = 0.0
@@ -100,6 +107,7 @@ def get_monthly_summary(couple_id: str, month: int, year: int) -> dict:
         "month": month,
         "year": year,
         "total_expenses": total,
+        "total_income": income_total,
         "by_category": dict(sorted(by_category.items(), key=lambda x: x[1], reverse=True)),
         "user1_name": u1_name,
         "user2_name": u2_name,

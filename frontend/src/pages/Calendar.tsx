@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, MessageCircle, PenLine } from 'lucide-react'
-import { getExpenses, getBills } from '../api/client'
+import { getExpenses, getBills, getCategories } from '../api/client'
 import { useStore } from '../store/useStore'
 
 const MONTH_NAMES = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 const WEEK_DAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
-const CATEGORY_ICONS: Record<string, string> = {
+const FALLBACK_ICONS: Record<string, string> = {
   mercado: '🛒', aluguel: '🏠', gasolina: '⛽', restaurante: '🍽️',
   transporte: '🚗', internet: '📶', saude: '💊', pet: '🐾',
   streaming: '🎬', lazer: '🎉', casa: '🛋️', pessoal: '👤', outros: '📦',
+  salario: '💼', freelance: '💻', investimentos: '📈', presente: '🎁', reembolso: '🔄',
 }
 
 export default function Calendar() {
@@ -23,6 +24,7 @@ export default function Calendar() {
   const [selectedDay, setSelectedDay] = useState<number | null>(today.getDate())
   const [expenses, setExpenses] = useState<any[]>([])
   const [bills, setBills] = useState<any[]>([])
+  const [categoryIcons, setCategoryIcons] = useState<Record<string, string>>(FALLBACK_ICONS)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -37,6 +39,18 @@ export default function Calendar() {
       setBills(b)
     }).finally(() => setLoading(false))
   }, [couple, month, year])
+
+  useEffect(() => {
+    if (!couple) return
+    getCategories(couple.id).then(cats => {
+      const map: Record<string, string> = { ...FALLBACK_ICONS }
+      cats.forEach(c => { map[c.value] = c.emoji })
+      setCategoryIcons(map)
+    })
+  }, [couple])
+
+  const entries = expenses.filter(e => e.type !== 'income')
+  const income = expenses.filter(e => e.type === 'income')
 
   const prevMonth = () => {
     if (month === 1) { setMonth(12); setYear(y => y - 1) }
@@ -55,13 +69,18 @@ export default function Calendar() {
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ]
 
-  // Index expenses and bills by day
-  const expensesByDay: Record<number, any[]> = {}
-  expenses.forEach(e => {
-    const d = parseInt(e.date?.split('-')[2] || '0')
-    if (!expensesByDay[d]) expensesByDay[d] = []
-    expensesByDay[d].push(e)
-  })
+  // Index expenses, income and bills by day
+  const indexByDay = (list: any[]) => {
+    const map: Record<number, any[]> = {}
+    list.forEach(e => {
+      const d = parseInt(e.date?.split('-')[2] || '0')
+      if (!map[d]) map[d] = []
+      map[d].push(e)
+    })
+    return map
+  }
+  const expensesByDay = indexByDay(entries)
+  const incomeByDay = indexByDay(income)
 
   const billsByDay: Record<number, any[]> = {}
   bills.forEach(b => {
@@ -71,8 +90,10 @@ export default function Calendar() {
   })
 
   const selectedExpenses = selectedDay ? (expensesByDay[selectedDay] || []) : []
+  const selectedIncome = selectedDay ? (incomeByDay[selectedDay] || []) : []
   const selectedBills = selectedDay ? (billsByDay[selectedDay] || []) : []
   const totalSelectedDay = selectedExpenses.reduce((s: number, e: any) => s + e.amount, 0)
+  const totalSelectedIncome = selectedIncome.reduce((s: number, e: any) => s + e.amount, 0)
 
   const isToday = (d: number) =>
     d === today.getDate() && month === today.getMonth() + 1 && year === today.getFullYear()
@@ -107,7 +128,11 @@ export default function Calendar() {
           </div>
           <div className="flex items-center gap-1.5 text-xs text-gray-500">
             <div className="w-2.5 h-2.5 rounded-full bg-pink-500" />
-            Gasto
+            Saída
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-gray-500">
+            <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+            Entrada
           </div>
         </div>
 
@@ -125,6 +150,7 @@ export default function Calendar() {
             {cells.map((day, idx) => {
               if (!day) return <div key={`empty-${idx}`} />
               const hasExpenses = (expensesByDay[day] || []).length > 0
+              const hasIncome = (incomeByDay[day] || []).length > 0
               const hasBills = (billsByDay[day] || []).length > 0
               const isSelected = selectedDay === day
               const todayFlag = isToday(day)
@@ -143,10 +169,13 @@ export default function Calendar() {
                 >
                   <span className="text-sm font-medium">{day}</span>
                   {/* Dots */}
-                  {(hasExpenses || hasBills) && (
+                  {(hasExpenses || hasIncome || hasBills) && (
                     <div className="flex gap-0.5 mt-0.5">
                       {hasBills && (
                         <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-orange-200' : 'bg-orange-400'}`} />
+                      )}
+                      {hasIncome && (
+                        <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-green-200' : 'bg-green-500'}`} />
                       )}
                       {hasExpenses && (
                         <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-pink-200' : 'bg-pink-500'}`} />
@@ -167,14 +196,21 @@ export default function Calendar() {
                 <h3 className="font-semibold text-gray-800">
                   {selectedDay} de {MONTH_NAMES[month]}
                 </h3>
-                {totalSelectedDay > 0 && (
-                  <span className="text-sm font-semibold text-pink-500">
-                    R$ {totalSelectedDay.toFixed(2)}
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  {totalSelectedIncome > 0 && (
+                    <span className="text-sm font-semibold text-green-600">
+                      +R$ {totalSelectedIncome.toFixed(2)}
+                    </span>
+                  )}
+                  {totalSelectedDay > 0 && (
+                    <span className="text-sm font-semibold text-pink-500">
+                      −R$ {totalSelectedDay.toFixed(2)}
+                    </span>
+                  )}
+                </div>
               </div>
 
-              {selectedBills.length === 0 && selectedExpenses.length === 0 && (
+              {selectedBills.length === 0 && selectedExpenses.length === 0 && selectedIncome.length === 0 && (
                 <p className="text-sm text-gray-400 text-center py-4">Nenhum registro neste dia.</p>
               )}
 
@@ -201,17 +237,17 @@ export default function Calendar() {
                 </div>
               )}
 
-              {/* Expenses */}
-              {selectedExpenses.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-pink-500 uppercase tracking-wide mb-2">Gastos do dia</p>
+              {/* Income */}
+              {selectedIncome.length > 0 && (
+                <div className="mb-3">
+                  <p className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">Entradas do dia</p>
                   <div className="space-y-2">
-                    {selectedExpenses.map((e: any) => {
+                    {selectedIncome.map((e: any) => {
                       const isTelegram = e.source === 'telegram'
                       return (
-                        <div key={e.id} className="flex items-center gap-3 p-2.5 bg-pink-50 rounded-xl">
+                        <div key={e.id} className="flex items-center gap-3 p-2.5 bg-green-50 rounded-xl">
                           <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center text-lg shadow-sm">
-                            {CATEGORY_ICONS[e.category] || '📦'}
+                            {categoryIcons[e.category] || '📥'}
                           </div>
                           <div className="flex-1">
                             <p className="text-sm font-medium text-gray-800 capitalize">{e.category}</p>
@@ -226,7 +262,40 @@ export default function Calendar() {
                               </span>
                             </div>
                           </div>
-                          <p className="font-semibold text-pink-600 text-sm">R$ {Number(e.amount).toFixed(2)}</p>
+                          <p className="font-semibold text-green-600 text-sm">+R$ {Number(e.amount).toFixed(2)}</p>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Expenses */}
+              {selectedExpenses.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-pink-500 uppercase tracking-wide mb-2">Saídas do dia</p>
+                  <div className="space-y-2">
+                    {selectedExpenses.map((e: any) => {
+                      const isTelegram = e.source === 'telegram'
+                      return (
+                        <div key={e.id} className="flex items-center gap-3 p-2.5 bg-pink-50 rounded-xl">
+                          <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center text-lg shadow-sm">
+                            {categoryIcons[e.category] || '📦'}
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-800 capitalize">{e.category}</p>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              {isTelegram ? (
+                                <MessageCircle size={11} className="text-blue-400" />
+                              ) : (
+                                <PenLine size={11} className="text-gray-400" />
+                              )}
+                              <span className="text-xs text-gray-400">
+                                {isTelegram ? 'Telegram' : 'Manual'} • {e.split_type === 'both' ? 'Ambos' : (e.paid_by?.name || 'Você')}
+                              </span>
+                            </div>
+                          </div>
+                          <p className="font-semibold text-pink-600 text-sm">−R$ {Number(e.amount).toFixed(2)}</p>
                         </div>
                       )
                     })}
@@ -242,31 +311,50 @@ export default function Calendar() {
           <div className="px-4 pb-6">
             <div className="card">
               <h3 className="font-semibold text-gray-800 mb-3">Resumo de {MONTH_NAMES[month]}</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-pink-50 rounded-xl p-3">
-                  <p className="text-xs text-gray-400">Total gasto</p>
-                  <p className="font-bold text-pink-600">
-                    R$ {expenses.reduce((s, e) => s + Number(e.amount), 0).toFixed(2)}
-                  </p>
-                </div>
-                <div className="bg-orange-50 rounded-xl p-3">
-                  <p className="text-xs text-gray-400">Contas</p>
-                  <p className="font-bold text-orange-500">
-                    {bills.filter(b => !b.is_paid).length} pendentes
-                  </p>
-                </div>
-              </div>
+              {(() => {
+                const totalIncomeMonth = income.reduce((s, e) => s + Number(e.amount), 0)
+                const totalExpenseMonth = entries.reduce((s, e) => s + Number(e.amount), 0)
+                const saldoMonth = totalIncomeMonth - totalExpenseMonth
+                return (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-green-50 rounded-xl p-3">
+                        <p className="text-xs text-gray-400">Total recebido</p>
+                        <p className="font-bold text-green-600">R$ {totalIncomeMonth.toFixed(2)}</p>
+                      </div>
+                      <div className="bg-pink-50 rounded-xl p-3">
+                        <p className="text-xs text-gray-400">Total gasto</p>
+                        <p className="font-bold text-pink-600">R$ {totalExpenseMonth.toFixed(2)}</p>
+                      </div>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-3">
+                      <div className={`rounded-xl p-3 ${saldoMonth >= 0 ? 'bg-blue-50' : 'bg-red-50'}`}>
+                        <p className="text-xs text-gray-400">Saldo do mês</p>
+                        <p className={`font-bold ${saldoMonth >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
+                          R$ {saldoMonth.toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="bg-orange-50 rounded-xl p-3">
+                        <p className="text-xs text-gray-400">Contas</p>
+                        <p className="font-bold text-orange-500">
+                          {bills.filter(b => !b.is_paid).length} pendentes
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                )
+              })()}
               <div className="mt-3 grid grid-cols-2 gap-3">
                 <div className="bg-blue-50 rounded-xl p-3">
                   <p className="text-xs text-gray-400">Via Telegram</p>
                   <p className="font-bold text-blue-500">
-                    {expenses.filter(e => e.source === 'telegram').length} gastos
+                    {entries.filter(e => e.source === 'telegram').length} gastos
                   </p>
                 </div>
                 <div className="bg-gray-50 rounded-xl p-3">
                   <p className="text-xs text-gray-400">Manual</p>
                   <p className="font-bold text-gray-600">
-                    {expenses.filter(e => e.source !== 'telegram').length} gastos
+                    {entries.filter(e => e.source !== 'telegram').length} gastos
                   </p>
                 </div>
               </div>

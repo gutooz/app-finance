@@ -5,53 +5,15 @@
     ONBOARD_CHOICE,
     ONBOARD_TOKEN,
     ONBOARD_SPLIT,
-    # Expense
-    EXP_AMOUNT,
-    EXP_CATEGORY,
-    EXP_PAID_BY,
-    EXP_SPLIT,
-    # Bill
-    BILL_NAME,
-    BILL_AMOUNT,
-    BILL_DUE_DAY,
-    # Goal
-    GOAL_NAME,
-    GOAL_TARGET,
-    GOAL_DEADLINE,
-    # Contribution
-    CONTRIB_SELECT,
-    CONTRIB_AMOUNT,
     # Login
     LOGIN_EMAIL,
     LOGIN_PASSWORD,
-) = range(19)
-
-CATEGORIES = [
-    ("mercado", "Mercado"),
-    ("aluguel", "Aluguel"),
-    ("gasolina", "Gasolina"),
-    ("restaurante", "Restaurante"),
-    ("transporte", "Transporte"),
-    ("internet", "Internet"),
-    ("saude", "Saúde"),
-    ("pet", "Pet"),
-    ("streaming", "Streaming"),
-    ("lazer", "Lazer"),
-    ("casa", "Casa"),
-    ("pessoal", "Pessoal"),
-    ("outros", "Outros"),
-]
+) = range(7)
 
 SPLIT_MODES = {
     "50_50": "50/50 — Metade cada um",
     "proportional": "Proporcional à renda",
 }
-
-SPLIT_TYPES = [
-    ("couple", "Do casal"),
-    ("mine", "Só meu"),
-    ("partners", "Só do(a) parceiro(a)"),
-]
 
 CATEGORY_KEYWORDS: dict[str, list[str]] = {
     "mercado": ["mercado", "supermercado", "feira", "groceries", "compras"],

@@ -265,7 +265,7 @@ export default function Dashboard() {
   const diffPct       = hasComparison ? ((totalExpenses - prevTotal) / prevTotal) * 100 : 0
   const prevMonthName = MS[month === 1 ? 11 : month - 2]
 
-  const recentExpenses = expenses.slice(0, 4)
+  const recentExpenses = expenses.filter((e: any) => e.type !== 'income').slice(0, 4)
   const upcomingBills  = bills.filter((b: any) => !b.is_paid).slice(0, 5)
 
   const chartData: BarPoint[] = useMemo(() => {
@@ -279,9 +279,10 @@ export default function Dashboard() {
   // ─── Quick actions ──────────────────────────────────────────────────────────
   const quickActions = [
     { icon: Plus,       label: 'Gasto',      color: 'bg-pink-500',   path: '/expenses/new' },
+    { icon: TrendingUp, label: 'Entrada',    color: 'bg-green-500',  path: '/expenses/new?type=income' },
     { icon: CalendarDays, label: 'Calendário', color: 'bg-orange-500', path: '/calendar' },
     { icon: Home,       label: 'Contas',     color: 'bg-purple-500', path: '/bills' },
-    { icon: Target,     label: 'Metas',      color: 'bg-green-500',  path: '/goals' },
+    { icon: Target,     label: 'Metas',      color: 'bg-green-600',  path: '/goals' },
     { icon: BarChart2,  label: 'Resumo',     color: 'bg-pink-600',   path: '/summary' },
   ]
 
@@ -712,7 +713,7 @@ export default function Dashboard() {
       {/* ════ BOTTOM NAV ═══════════════════════════════════════════════════════ */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-gray-100 shadow-xl">
         <div className="max-w-7xl mx-auto px-4 py-2">
-          <div className="grid grid-cols-5 gap-1">
+          <div className="grid grid-cols-6 gap-1">
             {quickActions.map(({ icon: Icon, label, color, path }) => (
               <button
                 key={label}

@@ -21,10 +21,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         if linked_profile:
             await update.message.reply_text(
                 f"Telegram conectado com sucesso, {linked_profile['name']}!\n\n"
-                "A partir de agora voce pode registrar gastos por aqui.\n"
+                "A partir de agora é só falar (ou mandar um áudio) com a Fin por aqui.\n"
                 "Ex: `50 mercado` ou `nosso aluguel 2200`",
                 parse_mode="Markdown",
-                reply_markup=keyboards.main_menu(),
             )
             return ConversationHandler.END
         context.user_data["invite_token"] = start_token
@@ -39,8 +38,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             await update.message.reply_text(
                 f"Olá, {profile['name']}! 👋\n\n"
                 f"Parceiro(a): {partner['name'] if partner else '—'}\n"
-                "O que você quer fazer?",
-                reply_markup=keyboards.main_menu(),
+                "Pode falar ou mandar um áudio — a Fin cuida do resto.",
             )
             return ConversationHandler.END
 
@@ -192,9 +190,8 @@ async def receive_split(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
         f"Perfeito! Vocês estão conectados! 🎉\n\n"
         f"Parceiro(a): {user1['name'] if user1 else '—'}\n"
         f"Divisão: {mode_label}\n\n"
-        f"Agora é só registrar os gastos juntos!\n\n"
+        f"Agora é só registrar os gastos juntos, falando ou mandando áudio pra Fin!\n\n"
         f"Finalize seu acesso Web aqui:\n{completion['url']}",
-        reply_markup=keyboards.main_menu(),
     )
     return ConversationHandler.END
 

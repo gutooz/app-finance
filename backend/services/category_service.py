@@ -5,19 +5,28 @@ from bson import ObjectId
 from backend.mongo_client import db
 
 DEFAULT_CATEGORIES = [
-    {"name": "Mercado",     "value": "mercado",     "emoji": "🛒"},
-    {"name": "Aluguel",     "value": "aluguel",     "emoji": "🏠"},
-    {"name": "Gasolina",    "value": "gasolina",    "emoji": "⛽"},
-    {"name": "Restaurante", "value": "restaurante", "emoji": "🍽️"},
-    {"name": "Transporte",  "value": "transporte",  "emoji": "🚗"},
-    {"name": "Internet",    "value": "internet",    "emoji": "📶"},
-    {"name": "Saúde",       "value": "saude",       "emoji": "💊"},
-    {"name": "Pet",         "value": "pet",         "emoji": "🐾"},
-    {"name": "Streaming",   "value": "streaming",   "emoji": "🎬"},
-    {"name": "Lazer",       "value": "lazer",       "emoji": "🎉"},
-    {"name": "Casa",        "value": "casa",        "emoji": "🛋️"},
-    {"name": "Pessoal",     "value": "pessoal",     "emoji": "👤"},
-    {"name": "Outros",      "value": "outros",      "emoji": "📦"},
+    {"name": "Mercado",     "value": "mercado",     "emoji": "🛒", "type": "expense"},
+    {"name": "Aluguel",     "value": "aluguel",     "emoji": "🏠", "type": "expense"},
+    {"name": "Gasolina",    "value": "gasolina",    "emoji": "⛽", "type": "expense"},
+    {"name": "Restaurante", "value": "restaurante", "emoji": "🍽️", "type": "expense"},
+    {"name": "Transporte",  "value": "transporte",  "emoji": "🚗", "type": "expense"},
+    {"name": "Internet",    "value": "internet",    "emoji": "📶", "type": "expense"},
+    {"name": "Saúde",       "value": "saude",       "emoji": "💊", "type": "expense"},
+    {"name": "Pet",         "value": "pet",         "emoji": "🐾", "type": "expense"},
+    {"name": "Streaming",   "value": "streaming",   "emoji": "🎬", "type": "expense"},
+    {"name": "Lazer",       "value": "lazer",       "emoji": "🎉", "type": "expense"},
+    {"name": "Casa",        "value": "casa",        "emoji": "🛋️", "type": "expense"},
+    {"name": "Pessoal",     "value": "pessoal",     "emoji": "👤", "type": "expense"},
+    {"name": "Outros",      "value": "outros",      "emoji": "📦", "type": "expense"},
+]
+
+DEFAULT_INCOME_CATEGORIES = [
+    {"name": "Salário",       "value": "salario",       "emoji": "💼", "type": "income"},
+    {"name": "Freelance",     "value": "freelance",     "emoji": "💻", "type": "income"},
+    {"name": "Investimentos", "value": "investimentos", "emoji": "📈", "type": "income"},
+    {"name": "Presente",      "value": "presente",      "emoji": "🎁", "type": "income"},
+    {"name": "Reembolso",     "value": "reembolso",     "emoji": "🔄", "type": "income"},
+    {"name": "Outros",        "value": "outros-receita", "emoji": "📥", "type": "income"},
 ]
 
 
@@ -33,14 +42,15 @@ def _ser(doc: dict) -> dict:
         "name": doc["name"],
         "value": doc["value"],
         "emoji": doc.get("emoji", "📦"),
+        "type": doc.get("type", "expense"),
     }
 
 
-def _seed_defaults(couple_id: str) -> list[dict]:
+def _seed(couple_id: str, categories: list[dict]) -> list[dict]:
     now = datetime.utcnow()
     docs = [
         {**c, "couple_id": ObjectId(couple_id), "created_at": now}
-        for c in DEFAULT_CATEGORIES
+        for c in categories
     ]
     if docs:
         result = db.categories.insert_many(docs)
@@ -52,11 +62,13 @@ def _seed_defaults(couple_id: str) -> list[dict]:
 def get_couple_categories(couple_id: str) -> list[dict]:
     docs = list(db.categories.find({"couple_id": ObjectId(couple_id)}, sort=[("created_at", 1)]))
     if not docs:
-        docs = _seed_defaults(couple_id)
+        docs = _seed(couple_id, DEFAULT_CATEGORIES + DEFAULT_INCOME_CATEGORIES)
+    elif not any(d.get("type", "expense") == "income" for d in docs):
+        docs = docs + _seed(couple_id, DEFAULT_INCOME_CATEGORIES)
     return [_ser(d) for d in docs]
 
 
-def create_category(couple_id: str, name: str, emoji: str) -> dict:
+def create_category(couple_id: str, name: str, emoji: str, type: str = "expense") -> dict:
     base_value = _slugify(name)
     value = base_value
     suffix = 2
@@ -69,6 +81,7 @@ def create_category(couple_id: str, name: str, emoji: str) -> dict:
         "name": name.strip(),
         "value": value,
         "emoji": emoji.strip() or "📦",
+        "type": type,
         "created_at": datetime.utcnow(),
     }
     result = db.categories.insert_one(doc)

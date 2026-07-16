@@ -16,6 +16,7 @@ def _ser_expense(doc: dict) -> dict:
         "split_type": doc["split_type"],
         "date": date_str,
         "source": doc.get("source", "manual"),
+        "type": doc.get("type", "expense"),
         "paid_by": {
             "id": paid_by.get("_id") or doc.get("paid_by_id"),
             "name": paid_by.get("name"),
@@ -34,6 +35,7 @@ def add_expense(
     expense_date: date | None = None,
     source: str = "manual",
     payer_amounts: dict[str, float] | None = None,
+    type: str = "expense",
 ) -> dict:
     d = expense_date or date.today()
     doc = {
@@ -45,6 +47,7 @@ def add_expense(
         "split_type": split_type,
         "date": datetime(d.year, d.month, d.day),
         "source": source,
+        "type": type,
         "created_at": datetime.utcnow(),
     }
     if payer_amounts:

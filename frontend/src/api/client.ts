@@ -67,6 +67,12 @@ export const updateEmail = (email: string) =>
 export const updatePassword = (password: string) =>
   api.put('/auth/password', { password }).then(r => r.data)
 
+export const forgotPassword = (email: string) =>
+  api.post('/auth/forgot-password', { email }).then(r => r.data as { ok: boolean; message: string })
+
+export const resetPassword = (token: string, password: string) =>
+  api.post('/auth/reset-password', { token, password }).then(r => r.data as { ok: boolean })
+
 // --- Telegram ---
 export const createTelegramLink = () =>
   api.post('/telegram/link-token').then(r => r.data as { token: string; bot_url: string; expires_in_minutes: number })
@@ -96,6 +102,7 @@ export const addExpense = (coupleId: string | number, data: {
   paid_by_id?: string; amount: number; category: string
   description?: string; split_type: string; date?: string
   payer_amounts?: Record<string, number>
+  type?: 'income' | 'expense'
 }) => api.post(`/couples/${coupleId}/expenses/`, data).then(r => r.data)
 
 export const getExpenses = (coupleId: string | number, month?: number, year?: number) =>
@@ -131,12 +138,12 @@ export const deleteGoal = (coupleId: string | number, goalId: string | number) =
   api.delete(`/couples/${coupleId}/goals/${goalId}`).then(r => r.data)
 
 // --- Categories ---
-export interface ExpenseCategory { id: string; name: string; value: string; emoji: string }
+export interface ExpenseCategory { id: string; name: string; value: string; emoji: string; type: 'income' | 'expense' }
 
 export const getCategories = (coupleId: string | number) =>
   api.get(`/couples/${coupleId}/categories/`).then(r => r.data as ExpenseCategory[])
 
-export const createCategory = (coupleId: string | number, data: { name: string; emoji: string }) =>
+export const createCategory = (coupleId: string | number, data: { name: string; emoji: string; type?: 'income' | 'expense' }) =>
   api.post(`/couples/${coupleId}/categories/`, data).then(r => r.data as ExpenseCategory)
 
 export const updateCategory = (coupleId: string | number, categoryId: string, data: { name?: string; emoji?: string }) =>

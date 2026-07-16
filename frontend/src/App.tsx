@@ -4,6 +4,8 @@ import { useStore } from './store/useStore'
 import { getMe } from './api/client'
 import Landing from './pages/Landing'
 import Auth from './pages/Auth'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 import CoupleSetup from './pages/CoupleSetup'
 import Dashboard from './pages/Dashboard'
 import AddExpense from './pages/AddExpense'
@@ -15,6 +17,7 @@ import Settings from './pages/Settings'
 import CompleteProfile from './pages/CompleteProfile'
 import Admin from './pages/Admin'
 import BankAccounts from './pages/BankAccounts'
+import ChatAssistant from './components/ChatAssistant'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { session } = useStore()
@@ -52,6 +55,8 @@ function App() {
           <Route path="/auth" element={<Auth key="auth-login" />} />
           <Route path="/login" element={<Auth key="login" />} />
           <Route path="/cadastro" element={<Auth key="register" initialMode="register" />} />
+          <Route path="/esqueci-senha" element={<ForgotPassword />} />
+          <Route path="/redefinir-senha" element={<ResetPassword />} />
           <Route path="/complete-profile" element={<CompleteProfile />} />
           <Route path="/setup" element={<RequireAuth><CoupleSetup /></RequireAuth>} />
           <Route path="/dashboard" element={<RequireCouple><Dashboard /></RequireCouple>} />
@@ -65,6 +70,7 @@ function App() {
           <Route path="/admin" element={<RequireAuth><Admin /></RequireAuth>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <ChatAssistant />
       </BrowserRouter>
     </div>
   )
