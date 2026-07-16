@@ -26,6 +26,34 @@ def send_email(to: str, subject: str, html_body: str, text_body: str | None = No
         server.send_message(message)
 
 
+def send_welcome_email(to: str, name: str) -> None:
+    subject = "Bem-vindo(a) ao FinCouple!"
+    first_name = (name or "").strip().split(" ")[0] or "por aí"
+    html_body = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;">
+      <h2 style="color:#D92D7D;">Bem-vindo(a) ao FinCouple, {first_name}! 💗</h2>
+      <p>Sua conta foi criada com sucesso. Agora e so conectar com seu par e comecar a organizar as financas do casal.</p>
+      <p>Dicas para comecar:</p>
+      <ul>
+        <li>Convide seu parceiro(a) para o casal dentro do app</li>
+        <li>Conecte o Telegram para registrar gastos so de conversar com a Fin</li>
+        <li>Cadastre suas contas fixas para nunca esquecer um vencimento</li>
+      </ul>
+      <p>Qualquer duvida, e so responder este e-mail.</p>
+    </div>
+    """
+    text_body = (
+        f"Bem-vindo(a) ao FinCouple, {first_name}!\n\n"
+        "Sua conta foi criada com sucesso. Agora e so conectar com seu par e comecar a organizar "
+        "as financas do casal.\n\n"
+        "Dicas para comecar:\n"
+        "- Convide seu parceiro(a) para o casal dentro do app\n"
+        "- Conecte o Telegram para registrar gastos so de conversar com a Fin\n"
+        "- Cadastre suas contas fixas para nunca esquecer um vencimento\n"
+    )
+    send_email(to, subject, html_body, text_body)
+
+
 def send_password_reset_email(to: str, reset_url: str, ttl_minutes: int) -> None:
     subject = "Redefinicao de senha - FinCouple"
     html_body = f"""

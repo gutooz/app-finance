@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 
 from backend.mongo_client import db
 from backend.password import hash_password
+from backend.services.email_service import send_welcome_email
 
 TOKEN_TTL_MINUTES = 15
 COMPLETION_TTL_DAYS = 7
@@ -148,4 +149,8 @@ def complete_telegram_profile(
     if profile:
         profile["id"] = profile.pop("_id")
         profile.pop("password_hash", None)
+    try:
+        send_welcome_email(email, name)
+    except Exception as exc:
+        print(f"[complete_telegram_profile] falha ao enviar e-mail de boas-vindas: {exc}")
     return profile or {}

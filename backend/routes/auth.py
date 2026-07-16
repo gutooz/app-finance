@@ -8,6 +8,7 @@ from backend.jwt_auth import create_access_token
 from backend.auth import get_current_user
 from backend.password import hash_password, verify_password
 from backend.services import couple_service, password_reset_service
+from backend.services.email_service import send_welcome_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -81,6 +82,10 @@ def register(data: RegisterIn):
         "created_at": datetime.utcnow(),
     })
     token = create_access_token(user_id, email)
+    try:
+        send_welcome_email(email, data.name)
+    except Exception as exc:
+        print(f"[register] falha ao enviar e-mail de boas-vindas: {exc}")
     return {
         "user": {"id": user_id, "email": email},
         "session": {"access_token": token},
