@@ -1,22 +1,27 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, Link, ArrowRight } from 'lucide-react'
+import { Users, Link } from 'lucide-react'
 import { createCouple, joinCouple } from '../api/client'
 import { useStore } from '../store/useStore'
 
-type Step = 'choice' | 'creating' | 'invite' | 'joining'
+type Step = 'choice' | 'invite' | 'joining'
 
-const SPLIT_OPTIONS = [
-  { value: '50_50', label: '50/50', desc: 'Cada um paga metade' },
-  { value: 'proportional', label: 'Proporcional', desc: 'Cada um paga conforme a renda' },
-]
+const DEFAULT_SPLIT_MODE = '50_50'
+
+function getErrorMessage(error: unknown, fallback: string) {
+  if (typeof error === 'object' && error && 'response' in error) {
+    const response = (error as { response?: { data?: { detail?: string } } }).response
+    if (response?.data?.detail) return response.data.detail
+  }
+  if (error instanceof Error) return error.message
+  return fallback
+}
 
 export default function CoupleSetup() {
   const navigate = useNavigate()
   const { profile, setCouple } = useStore()
 
   const [step, setStep] = useState<Step>('choice')
-  const [splitMode, setSplitMode] = useState('50_50')
   const [inviteToken, setInviteToken] = useState('')
   const [createdToken, setCreatedToken] = useState('')
   const [loading, setLoading] = useState(false)
@@ -25,12 +30,12 @@ export default function CoupleSetup() {
   const handleCreate = async () => {
     setLoading(true); setError('')
     try {
-      const couple = await createCouple(splitMode)
+      const couple = await createCouple(DEFAULT_SPLIT_MODE)
       setCreatedToken(couple.invite_token)
       setCouple(couple)
       setStep('invite')
-    } catch (e: any) {
-      setError(e.response?.data?.detail || 'Erro ao criar casal')
+    } catch (error: unknown) {
+      setError(getErrorMessage(error, 'Erro ao criar casal'))
     } finally {
       setLoading(false)
     }
@@ -39,11 +44,11 @@ export default function CoupleSetup() {
   const handleJoin = async () => {
     setLoading(true); setError('')
     try {
-      const couple = await joinCouple(inviteToken.trim(), splitMode)
+      const couple = await joinCouple(inviteToken.trim(), DEFAULT_SPLIT_MODE)
       setCouple(couple)
       navigate('/dashboard')
-    } catch (e: any) {
-      setError(e.response?.data?.detail || 'Código inválido')
+    } catch (error: unknown) {
+      setError(getErrorMessage(error, 'Código inválido'))
     } finally {
       setLoading(false)
     }
@@ -56,7 +61,8 @@ export default function CoupleSetup() {
 
       <div className="space-y-4 flex-1">
         <button
-          onClick={() => setStep('creating')}
+          onClick={handleCreate}
+          disabled={loading}
           className="w-full p-5 rounded-2xl border-2 border-gray-200 hover:border-pink-300 text-left transition-all group"
         >
           <div className="flex items-center gap-4">
@@ -64,7 +70,7 @@ export default function CoupleSetup() {
               <Users className="text-pink-500" size={24} />
             </div>
             <div>
-              <p className="font-semibold text-gray-900">Criar novo casal</p>
+              <p className="font-semibold text-gray-900">{loading ? 'Criando casal...' : 'Criar novo casal'}</p>
               <p className="text-sm text-gray-400">Gere um código para convidar seu(sua) parceiro(a)</p>
             </div>
           </div>
@@ -72,6 +78,7 @@ export default function CoupleSetup() {
 
         <button
           onClick={() => setStep('joining')}
+          disabled={loading}
           className="w-full p-5 rounded-2xl border-2 border-gray-200 hover:border-purple-300 text-left transition-all group"
         >
           <div className="flex items-center gap-4">
@@ -85,34 +92,8 @@ export default function CoupleSetup() {
           </div>
         </button>
       </div>
-    </div>
-  )
-
-  if (step === 'creating') return (
-    <div className="min-h-screen bg-white flex flex-col px-6 pt-16">
-      <button className="btn-ghost text-left -ml-4 mb-6" onClick={() => setStep('choice')}>← Voltar</button>
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">Como dividir?</h2>
-      <p className="text-gray-500 mb-8">Escolha como vocês vão dividir as despesas</p>
-
-      <div className="space-y-3 flex-1">
-        {SPLIT_OPTIONS.map(opt => (
-          <button
-            key={opt.value}
-            onClick={() => setSplitMode(opt.value)}
-            className={`w-full p-4 rounded-2xl border-2 text-left transition-all ${
-              splitMode === opt.value ? 'border-pink-500 bg-pink-50' : 'border-gray-200'
-            }`}
-          >
-            <div className="font-semibold text-gray-900">{opt.label}</div>
-            <div className="text-sm text-gray-500">{opt.desc}</div>
-          </button>
-        ))}
-      </div>
 
       {error && <p className="text-red-500 text-sm my-3">{error}</p>}
-      <button className="btn-primary mt-8 mb-8" onClick={handleCreate} disabled={loading}>
-        {loading ? 'Criando...' : 'Criar casal'} <ArrowRight className="inline ml-1" size={18} />
-      </button>
     </div>
   )
 
@@ -140,7 +121,7 @@ export default function CoupleSetup() {
       </div>
 
       <p className="text-xs text-gray-400 mb-8 max-w-xs">
-        Seu(sua) parceiro(a) deve criar uma conta e usar este código na tela de setup.
+        Seu(sua) parceiro(a) deve criar uma conta e usar este código para entrar no casal.
       </p>
 
       <button className="btn-primary max-w-sm w-full" onClick={() => navigate('/dashboard')}>
@@ -164,22 +145,6 @@ export default function CoupleSetup() {
             value={inviteToken}
             onChange={e => setInviteToken(e.target.value)}
           />
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-gray-500 mb-2">Como dividir as despesas?</label>
-          {SPLIT_OPTIONS.map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => setSplitMode(opt.value)}
-              className={`w-full p-3 rounded-xl border-2 text-left mb-2 transition-all ${
-                splitMode === opt.value ? 'border-pink-500 bg-pink-50' : 'border-gray-200'
-              }`}
-            >
-              <span className="font-medium text-sm">{opt.label}</span>
-              <span className="text-gray-400 text-xs ml-2">— {opt.desc}</span>
-            </button>
-          ))}
         </div>
       </div>
 

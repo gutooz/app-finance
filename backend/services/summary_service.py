@@ -33,6 +33,23 @@ def get_monthly_summary(couple_id: str, month: int, year: int) -> dict:
         "type": "income",
     }))
 
+    # Saldo acumulado da carteira: considera somente entradas/gastos que ja
+    # aconteceram. Gastos no credito ficam com a data do vencimento, entao so
+    # baixam o saldo atual quando a fatura vence.
+    initial_balance = float(couple.get("initial_balance") or 0)
+    balance_as_of = datetime.combine(datetime.now().date(), datetime.max.time())
+    all_time_expenses = sum(float(e["amount"]) for e in db.expenses.find({
+        "couple_id": ObjectId(couple_id),
+        "type": {"$ne": "income"},
+        "date": {"$lte": balance_as_of},
+    }))
+    all_time_income = sum(float(i["amount"]) for i in db.expenses.find({
+        "couple_id": ObjectId(couple_id),
+        "type": "income",
+        "date": {"$lte": balance_as_of},
+    }))
+    wallet_balance = initial_balance + all_time_income - all_time_expenses
+
     total = 0.0
     by_category: dict[str, float] = {}
     user1_paid = 0.0
@@ -108,6 +125,8 @@ def get_monthly_summary(couple_id: str, month: int, year: int) -> dict:
         "year": year,
         "total_expenses": total,
         "total_income": income_total,
+        "initial_balance": initial_balance,
+        "wallet_balance": wallet_balance,
         "by_category": dict(sorted(by_category.items(), key=lambda x: x[1], reverse=True)),
         "user1_name": u1_name,
         "user2_name": u2_name,

@@ -13,7 +13,7 @@ from telegram.ext import (
 load_dotenv()
 
 from backend.bot.states import (
-    ONBOARD_NAME, ONBOARD_INCOME, ONBOARD_CHOICE, ONBOARD_TOKEN, ONBOARD_SPLIT,
+    ONBOARD_NAME, ONBOARD_INCOME, ONBOARD_CHOICE, ONBOARD_TOKEN,
     LOGIN_EMAIL, LOGIN_PASSWORD,
 )
 from backend.bot.handlers import onboarding
@@ -156,7 +156,6 @@ def build_onboarding_handler() -> ConversationHandler:
                 CallbackQueryHandler(onboarding.choice_join, pattern="^onboard:join$"),
             ],
             ONBOARD_TOKEN: [MessageHandler(filters.TEXT & ~filters.COMMAND, onboarding.receive_token)],
-            ONBOARD_SPLIT: [CallbackQueryHandler(onboarding.receive_split, pattern="^onboard:split:")],
         },
         fallbacks=[CommandHandler("cancel", onboarding.cancel)],
         allow_reentry=True,

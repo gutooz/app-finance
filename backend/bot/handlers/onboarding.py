@@ -1,9 +1,11 @@
 from telegram import Update
 from telegram.ext import ContextTypes, ConversationHandler
 from backend.services import couple_service, telegram_link_service
-from backend.bot.states import ONBOARD_NAME, ONBOARD_INCOME, ONBOARD_CHOICE, ONBOARD_TOKEN, ONBOARD_SPLIT
+from backend.bot.states import ONBOARD_NAME, ONBOARD_INCOME, ONBOARD_CHOICE, ONBOARD_TOKEN
 from backend.bot import keyboards
 from backend.bot.handlers.user_context import clear_user_context
+
+DEFAULT_SPLIT_MODE = "50_50"
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -51,12 +53,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             context.user_data["joining_couple_id"] = couple["id"]
             name_prompt = f"Você foi convidado(a) por {user1['name'] if user1 else 'seu parceiro(a)'}! 💕\n\n"
             if profile:
-                # Already registered → go straight to split choice
+                couple_service.join_couple(couple["id"], profile["id"], DEFAULT_SPLIT_MODE)
+                completion = telegram_link_service.create_profile_completion_link(profile["id"])
+                clear_user_context(context)
                 await update.message.reply_text(
-                    name_prompt + "Como vocês querem dividir as despesas?",
-                    reply_markup=keyboards.split_mode(),
+                    name_prompt +
+                    "Pronto, vocês estão conectados!\n\n"
+                    "A divisão das despesas fica para vocês decidirem depois.\n\n"
+                    f"Finalize seu acesso Web aqui:\n{completion['url']}",
                 )
-                return ONBOARD_SPLIT
+                return ConversationHandler.END
             await update.message.reply_text(name_prompt + "Como você se chama?")
             return ONBOARD_NAME
 
@@ -98,11 +104,23 @@ async def receive_income(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     # If joining an existing couple, skip create/join step
     if context.user_data.get("joining_couple_id"):
-        await update.message.reply_text(
-            "Como vocês querem dividir as despesas do casal?",
-            reply_markup=keyboards.split_mode(),
+        couple_id = context.user_data["joining_couple_id"]
+        profile = couple_service.get_profile_by_telegram(update.effective_user.id) or couple_service.create_telegram_user(
+            update.effective_user.id, context.user_data.get("name", ""), income
         )
-        return ONBOARD_SPLIT
+        couple = couple_service.get_couple(couple_id)
+        user1 = couple_service.get_profile(couple["user1_id"]) if couple else None
+        couple_service.join_couple(couple_id, profile["id"], DEFAULT_SPLIT_MODE)
+        completion = telegram_link_service.create_profile_completion_link(profile["id"])
+        clear_user_context(context)
+        await update.message.reply_text(
+            f"Perfeito! Vocês estão conectados! 🎉\n\n"
+            f"Parceiro(a): {user1['name'] if user1 else '—'}\n"
+            "A divisão das despesas fica para vocês decidirem depois.\n\n"
+            f"Agora é só registrar os gastos juntos, falando ou mandando áudio pra Fin!\n\n"
+            f"Finalize seu acesso Web aqui:\n{completion['url']}",
+        )
+        return ConversationHandler.END
 
     await update.message.reply_text(
         "Você quer criar um novo casal ou entrar em um já existente?",
@@ -134,7 +152,7 @@ async def choice_create(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
         f"`{invite_link}`\n\n"
         f"Ou o código: `{token}`\n\n"
         f"Finalize seu acesso Web aqui:\n{completion['url']}\n\n"
-        "Aguardando seu(sua) parceiro(a)...",
+        "Aguardando seu(sua) parceiro(a)... A divisão das despesas fica para decidirem depois.",
         parse_mode="Markdown",
     )
     return ConversationHandler.END
@@ -158,39 +176,18 @@ async def receive_token(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
 
     user1 = couple_service.get_profile(couple["user1_id"])
     context.user_data["joining_couple_id"] = couple["id"]
-
-    await update.message.reply_text(
-        f"Ótimo! Você vai se juntar ao casal de {user1['name'] if user1 else 'seu parceiro(a)'}! 💕\n\n"
-        "Como vocês querem dividir as despesas?",
-        reply_markup=keyboards.split_mode(),
-    )
-    return ONBOARD_SPLIT
-
-
-async def receive_split(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    query = update.callback_query
-    await query.answer()
-    split_mode = query.data.split(":")[2]
     tg_id = update.effective_user.id
-    couple_id = context.user_data.get("joining_couple_id")
-
     profile = couple_service.get_profile_by_telegram(tg_id) or couple_service.create_telegram_user(
         tg_id, context.user_data.get("name", ""), context.user_data.get("income", 0)
     )
 
-    couple = couple_service.get_couple(couple_id)
-    user1 = couple_service.get_profile(couple["user1_id"]) if couple else None
-    couple_service.join_couple(couple_id, profile["id"], split_mode)
+    couple_service.join_couple(couple["id"], profile["id"], DEFAULT_SPLIT_MODE)
     completion = telegram_link_service.create_profile_completion_link(profile["id"])
-
     clear_user_context(context)
 
-    mode_label = "50/50" if split_mode == "50_50" else "Proporcional à renda"
-    await query.edit_message_text(
-        f"Perfeito! Vocês estão conectados! 🎉\n\n"
-        f"Parceiro(a): {user1['name'] if user1 else '—'}\n"
-        f"Divisão: {mode_label}\n\n"
-        f"Agora é só registrar os gastos juntos, falando ou mandando áudio pra Fin!\n\n"
+    await update.message.reply_text(
+        f"Perfeito! Você entrou no casal de {user1['name'] if user1 else 'seu parceiro(a)'}! 🎉\n\n"
+        "A divisão das despesas fica para vocês decidirem depois.\n\n"
         f"Finalize seu acesso Web aqui:\n{completion['url']}",
     )
     return ConversationHandler.END

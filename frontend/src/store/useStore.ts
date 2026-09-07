@@ -27,6 +27,7 @@ export interface Couple {
   split_mode: string
   invite_token: string
   is_complete: boolean
+  initial_balance: number
   user1_id: string
   user2_id: string | null
   user1: CoupleUser

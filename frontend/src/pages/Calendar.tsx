@@ -1,8 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, MessageCircle, PenLine } from 'lucide-react'
-import { getExpenses, getBills, getCategories } from '../api/client'
+import { getExpenses, getBills, getCategories, type ExpenseCategory } from '../api/client'
 import { useStore } from '../store/useStore'
+import {
+  getFixedCategoryCalendarItems,
+  indexCalendarItemsByDay,
+  type FixedCategoryCalendarItem,
+} from '../utils/calendar'
 
 const MONTH_NAMES = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
@@ -15,6 +20,35 @@ const FALLBACK_ICONS: Record<string, string> = {
   salario: '💼', freelance: '💻', investimentos: '📈', presente: '🎁', reembolso: '🔄',
 }
 
+interface CalendarExpense {
+  id: string
+  amount: number
+  category: string
+  description?: string
+  split_type: string
+  date?: string
+  source?: string
+  type?: 'income' | 'expense'
+  paid_by?: {
+    name?: string
+  }
+}
+
+interface CalendarBill {
+  id: string
+  name: string
+  amount: number
+  due_day: number
+  is_paid?: boolean
+  source?: string
+}
+
+type CalendarBillItem = CalendarBill | FixedCategoryCalendarItem
+
+function isFixedCategoryBill(item: CalendarBillItem): item is FixedCategoryCalendarItem {
+  return item.source === 'category'
+}
+
 export default function Calendar() {
   const navigate = useNavigate()
   const { couple } = useStore()
@@ -22,15 +56,14 @@ export default function Calendar() {
   const [month, setMonth] = useState(today.getMonth() + 1)
   const [year, setYear] = useState(today.getFullYear())
   const [selectedDay, setSelectedDay] = useState<number | null>(today.getDate())
-  const [expenses, setExpenses] = useState<any[]>([])
-  const [bills, setBills] = useState<any[]>([])
+  const [expenses, setExpenses] = useState<CalendarExpense[]>([])
+  const [bills, setBills] = useState<CalendarBill[]>([])
+  const [categories, setCategories] = useState<ExpenseCategory[]>([])
   const [categoryIcons, setCategoryIcons] = useState<Record<string, string>>(FALLBACK_ICONS)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!couple) return
-    setLoading(true)
-    setSelectedDay(null)
     Promise.all([
       getExpenses(couple.id, month, year),
       getBills(couple.id, month, year),
@@ -45,6 +78,7 @@ export default function Calendar() {
     getCategories(couple.id).then(cats => {
       const map: Record<string, string> = { ...FALLBACK_ICONS }
       cats.forEach(c => { map[c.value] = c.emoji })
+      setCategories(cats)
       setCategoryIcons(map)
     })
   }, [couple])
@@ -53,10 +87,14 @@ export default function Calendar() {
   const income = expenses.filter(e => e.type === 'income')
 
   const prevMonth = () => {
+    setLoading(true)
+    setSelectedDay(null)
     if (month === 1) { setMonth(12); setYear(y => y - 1) }
     else setMonth(m => m - 1)
   }
   const nextMonth = () => {
+    setLoading(true)
+    setSelectedDay(null)
     if (month === 12) { setMonth(1); setYear(y => y + 1) }
     else setMonth(m => m + 1)
   }
@@ -70,20 +108,12 @@ export default function Calendar() {
   ]
 
   // Index expenses, income and bills by day
-  const indexByDay = (list: any[]) => {
-    const map: Record<number, any[]> = {}
-    list.forEach(e => {
-      const d = parseInt(e.date?.split('-')[2] || '0')
-      if (!map[d]) map[d] = []
-      map[d].push(e)
-    })
-    return map
-  }
-  const expensesByDay = indexByDay(entries)
-  const incomeByDay = indexByDay(income)
+  const expensesByDay = indexCalendarItemsByDay(entries, e => e.date)
+  const incomeByDay = indexCalendarItemsByDay(income, e => e.date)
+  const fixedCategoryBills = getFixedCategoryCalendarItems(categories)
 
-  const billsByDay: Record<number, any[]> = {}
-  bills.forEach(b => {
+  const billsByDay: Record<number, CalendarBillItem[]> = {}
+  ;([...bills, ...fixedCategoryBills] as CalendarBillItem[]).forEach(b => {
     const d = b.due_day
     if (!billsByDay[d]) billsByDay[d] = []
     billsByDay[d].push(b)
@@ -92,8 +122,9 @@ export default function Calendar() {
   const selectedExpenses = selectedDay ? (expensesByDay[selectedDay] || []) : []
   const selectedIncome = selectedDay ? (incomeByDay[selectedDay] || []) : []
   const selectedBills = selectedDay ? (billsByDay[selectedDay] || []) : []
-  const totalSelectedDay = selectedExpenses.reduce((s: number, e: any) => s + e.amount, 0)
-  const totalSelectedIncome = selectedIncome.reduce((s: number, e: any) => s + e.amount, 0)
+  const totalSelectedDay = selectedExpenses.reduce((s, e) => s + e.amount, 0)
+  const totalSelectedIncome = selectedIncome.reduce((s, e) => s + e.amount, 0)
+  const pendingBillsCount = bills.filter(b => !b.is_paid).length + fixedCategoryBills.length
 
   const isToday = (d: number) =>
     d === today.getDate() && month === today.getMonth() + 1 && year === today.getFullYear()
@@ -219,20 +250,29 @@ export default function Calendar() {
                 <div className="mb-3">
                   <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide mb-2">Contas a pagar</p>
                   <div className="space-y-2">
-                    {selectedBills.map((b: any) => (
-                      <div key={b.id} className="flex items-center gap-3 p-2.5 bg-orange-50 rounded-xl">
-                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm ${
-                          b.is_paid ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-500'
-                        }`}>
-                          {b.is_paid ? '✅' : '📋'}
+                    {selectedBills.map(b => {
+                      const isCategoryBill = isFixedCategoryBill(b)
+                      const isPaid = !isCategoryBill && b.is_paid
+
+                      return (
+                        <div key={b.id} className="flex items-center gap-3 p-2.5 bg-orange-50 rounded-xl">
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm ${
+                            isPaid ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-500'
+                          }`}>
+                            {isCategoryBill ? (b.emoji || '📋') : isPaid ? '✅' : '📋'}
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-800">{b.name}</p>
+                            <p className="text-xs text-gray-400">
+                              Vence dia {b.due_day} • {isCategoryBill ? 'Categoria fixa' : isPaid ? 'Pago' : 'Pendente'}
+                            </p>
+                          </div>
+                          {!isCategoryBill && (
+                            <p className="font-semibold text-orange-600 text-sm">R$ {Number(b.amount).toFixed(2)}</p>
+                          )}
                         </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-800">{b.name}</p>
-                          <p className="text-xs text-gray-400">Vence dia {b.due_day} • {b.is_paid ? 'Pago' : 'Pendente'}</p>
-                        </div>
-                        <p className="font-semibold text-orange-600 text-sm">R$ {Number(b.amount).toFixed(2)}</p>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               )}
@@ -242,7 +282,7 @@ export default function Calendar() {
                 <div className="mb-3">
                   <p className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">Entradas do dia</p>
                   <div className="space-y-2">
-                    {selectedIncome.map((e: any) => {
+                    {selectedIncome.map(e => {
                       const isTelegram = e.source === 'telegram'
                       return (
                         <div key={e.id} className="flex items-center gap-3 p-2.5 bg-green-50 rounded-xl">
@@ -275,7 +315,7 @@ export default function Calendar() {
                 <div>
                   <p className="text-xs font-semibold text-pink-500 uppercase tracking-wide mb-2">Saídas do dia</p>
                   <div className="space-y-2">
-                    {selectedExpenses.map((e: any) => {
+                    {selectedExpenses.map(e => {
                       const isTelegram = e.source === 'telegram'
                       return (
                         <div key={e.id} className="flex items-center gap-3 p-2.5 bg-pink-50 rounded-xl">
@@ -337,7 +377,7 @@ export default function Calendar() {
                       <div className="bg-orange-50 rounded-xl p-3">
                         <p className="text-xs text-gray-400">Contas</p>
                         <p className="font-bold text-orange-500">
-                          {bills.filter(b => !b.is_paid).length} pendentes
+                          {pendingBillsCount} pendentes
                         </p>
                       </div>
                     </div>

@@ -11,11 +11,15 @@ class CategoryCreate(BaseModel):
     name: str
     emoji: str = "📦"
     type: str = "expense"
+    cost_type: str = "variable"
+    due_day: Optional[int] = None
 
 
 class CategoryUpdate(BaseModel):
     name: Optional[str] = None
     emoji: Optional[str] = None
+    cost_type: Optional[str] = None
+    due_day: Optional[int] = None
 
 
 def _check_access(couple_id: str, user_id: str) -> dict:
@@ -40,7 +44,11 @@ def create_category(couple_id: str, data: CategoryCreate, current_user: dict = D
         raise HTTPException(400, "Nome obrigatorio")
     if data.type not in ("income", "expense"):
         raise HTTPException(400, "Tipo invalido")
-    return category_service.create_category(couple_id, data.name, data.emoji, data.type)
+    if data.cost_type not in ("fixed", "variable"):
+        raise HTTPException(400, "Tipo de gasto invalido")
+    if data.due_day is not None and not 1 <= data.due_day <= 31:
+        raise HTTPException(400, "Dia da conta invalido")
+    return category_service.create_category(couple_id, data.name, data.emoji, data.type, data.cost_type, data.due_day)
 
 
 @router.put("/{category_id}")
@@ -48,7 +56,11 @@ def update_category(
     couple_id: str, category_id: str, data: CategoryUpdate, current_user: dict = Depends(get_current_user)
 ):
     _check_access(couple_id, current_user["id"])
-    result = category_service.update_category(category_id, couple_id, data.name, data.emoji)
+    if data.cost_type is not None and data.cost_type not in ("fixed", "variable"):
+        raise HTTPException(400, "Tipo de gasto invalido")
+    if data.due_day is not None and not 1 <= data.due_day <= 31:
+        raise HTTPException(400, "Dia da conta invalido")
+    result = category_service.update_category(category_id, couple_id, data.name, data.emoji, data.cost_type, data.due_day)
     if not result:
         raise HTTPException(404, "Categoria nao encontrada")
     return result

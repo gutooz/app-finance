@@ -15,6 +15,10 @@ class CoupleJoin(BaseModel):
     split_mode: str = "50_50"
 
 
+class BalanceUpdate(BaseModel):
+    initial_balance: float
+
+
 @router.post("/")
 def create_couple(data: CoupleCreate, current_user: dict = Depends(get_current_user)):
     profile = couple_service.get_profile(current_user["id"])
@@ -54,3 +58,13 @@ def get_couple(couple_id: str, current_user: dict = Depends(get_current_user)):
     if couple.get("user1_id") != current_user["id"] and couple.get("user2_id") != current_user["id"]:
         raise HTTPException(403, "Sem permissao")
     return couple
+
+
+@router.put("/{couple_id}/balance")
+def update_balance(couple_id: str, data: BalanceUpdate, current_user: dict = Depends(get_current_user)):
+    couple = couple_service.get_couple(couple_id)
+    if not couple:
+        raise HTTPException(404, "Casal nao encontrado")
+    if couple.get("user1_id") != current_user["id"] and couple.get("user2_id") != current_user["id"]:
+        raise HTTPException(403, "Sem permissao")
+    return couple_service.set_initial_balance(couple_id, data.initial_balance)

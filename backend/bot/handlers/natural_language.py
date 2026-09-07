@@ -2,6 +2,7 @@ import re
 import unicodedata
 from datetime import date, timedelta
 from backend.bot.states import CATEGORY_KEYWORDS
+from backend.services.credit_card_service import normalize_payment_method
 
 # "gastei 50 com pizza", "gastei 100 no mercado", "gastei 30 em gasolina"
 _GASTEI_RE = re.compile(
@@ -37,6 +38,19 @@ def _detect_type(text: str) -> str:
     text_lower = _normalize(text)
     income_words = ["recebi", "receita", "salario", "freela", "pix recebido", "deposito", "bonus"]
     return "income" if any(word in text_lower for word in income_words) else "expense"
+
+
+def _detect_payment_method(text: str) -> str:
+    text_lower = _normalize(text)
+    if re.search(r"\b(pix)\b", text_lower):
+        return "pix"
+    if re.search(r"\b(dinheiro|especie)\b", text_lower):
+        return "cash"
+    if re.search(r"\b(debito)\b", text_lower):
+        return "debit"
+    if re.search(r"\b(credito|cartao|cartao de credito)\b", text_lower):
+        return "credit_card"
+    return normalize_payment_method(None)
 
 
 def _detect_scope(text: str, category: str) -> str:
@@ -102,6 +116,7 @@ def parse_expense(text: str) -> dict | None:
             "type": _detect_type(text_lower),
             "split_type": _detect_scope(text_lower, category),
             "date": _detect_date(text_lower),
+            "payment_method": _detect_payment_method(text_lower),
         }
 
     # Any number in the text
@@ -121,4 +136,5 @@ def parse_expense(text: str) -> dict | None:
         "type": _detect_type(text_lower),
         "split_type": _detect_scope(text_lower, category),
         "date": _detect_date(text_lower),
+        "payment_method": _detect_payment_method(text_lower),
     }

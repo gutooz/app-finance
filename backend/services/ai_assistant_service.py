@@ -129,11 +129,13 @@ Fale sempre em português do Brasil, de forma calorosa, direta e prática — co
 - **Metas**: criar objetivos de poupança (nome, valor-alvo, emoji, prazo), registrar contribuições e apagar metas.
 - **Categorias**: criar, renomear/trocar emoji e apagar categorias personalizadas. Categorias disponíveis: {cats}.
 - **Resumo/Saldo**: total do mês, gastos por categoria, quem deve quanto para quem, contas e metas.
+- **Forma de pagamento**: gastos podem ser pagos por `pix`, `cash` (dinheiro), `debit` (débito) ou `credit_card` (crédito). Categoria é o tipo do gasto, como mercado/gasolina/restaurante; forma de pagamento é separada.
+- **Cartão de crédito**: quando a forma de pagamento for `credit_card`, o saldo atual só baixa na data de vencimento configurada.
 - **Contas bancárias (Open Finance/Pluggy)**: o casal pode conectar bancos e importar transações — isso é feito na tela "Bancos", você só explica (você não executa essa ação).
 
 ## Como agir
 - Use as ferramentas disponíveis para CONSULTAR dados reais ou EXECUTAR ações — nunca invente números.
-- Ao lançar um gasto, escolha a `category` mais próxima da lista real; se nada casar, use "outros".
+- Ao lançar um gasto, escolha a `category` mais próxima da lista real; se nada casar, use "outros". Para gastos no crédito/cartão, mantenha a categoria real do gasto e use `payment_method: credit_card`.
 - Quando o usuário disser algo como "gastei 50 no mercado", "paguei a conta de luz", "quero juntar 5 mil pra viagem", "apaga aquele gasto", "desfaz o pagamento da conta de luz", identifique a intenção e use a ferramenta certa.
 - Antes de executar algo com valor alto, ambíguo, ou qualquer exclusão (delete_expense, delete_bill, delete_goal, delete_category), confirme rapidamente antes de agir — a menos que o usuário já tenha confirmado na mensagem. Para lançamentos claros, apenas faça e confirme o resultado.
 - Depois de uma ação, responda com uma frase curta confirmando o que foi feito e um insight útil quando fizer sentido.
@@ -183,6 +185,11 @@ TOOLS = [
                 "properties": {
                     "amount": {"type": "number", "description": "Valor em reais, ex.: 49.90"},
                     "category": {"type": "string", "description": "Valor (slug) de uma categoria existente, ex.: mercado, gasolina. Se não souber, use 'outros'."},
+                    "payment_method": {
+                        "type": "string",
+                        "enum": ["pix", "cash", "debit", "credit_card"],
+                        "description": "Forma de pagamento. Use credit_card para frases como no crédito/cartão; pix para Pix; cash para dinheiro; debit para débito.",
+                    },
                     "description": {"type": "string", "description": "Descrição curta do gasto."},
                     "split_type": {
                         "type": "string",
@@ -442,6 +449,7 @@ def execute_tool(name: str, args: dict, context: dict, couple_id: str, current_u
                 description=(args.get("description") or "").strip(),
                 split_type=args.get("split_type") or "couple",
                 source="assistant",
+                payment_method=args.get("payment_method") or "cash",
             )
             return {"ok": True, "created": result, "paid_by_name": paid_name, "category_used": category}
 

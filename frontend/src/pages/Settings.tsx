@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   AlertCircle,
@@ -13,32 +13,180 @@ import {
   MessageCircle,
   Send,
   User,
+  Wallet,
 } from 'lucide-react'
 import { useStore } from '../store/useStore'
-import { createTelegramLink, createWhatsAppLink, updateProfile, updateEmail, updatePassword } from '../api/client'
+import { createTelegramLink, createWhatsAppLink, updateProfile, updateEmail, updatePassword, updateCoupleBalance } from '../api/client'
+
+type Message = { type: 'ok' | 'err'; text: string }
+
+type ChannelAccent = 'sky' | 'green'
+
+function getApiErrorMessage(error: unknown, fallback: string) {
+  if (typeof error === 'object' && error && 'response' in error) {
+    const response = (error as { response?: { data?: { detail?: string } } }).response
+    if (response?.data?.detail) return response.data.detail
+  }
+  if (error instanceof Error) return error.message
+  return fallback
+}
+
+function Msg({ msg }: { msg: Message | null }) {
+  if (!msg) return null
+  return (
+    <div className={`flex items-center gap-2 text-sm px-3 py-2 rounded-xl mt-2 ${
+      msg.type === 'ok' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'
+    }`}>
+      {msg.type === 'ok' ? <Check size={14} /> : <AlertCircle size={14} />}
+      {msg.text}
+    </div>
+  )
+}
+
+function ResultBox({
+  label,
+  value,
+  href,
+  onCopy,
+}: {
+  label: string
+  value: string
+  href?: string
+  onCopy: (value: string, label: string) => void
+}) {
+  if (!value) return null
+  return (
+    <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50 p-3">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{label}</p>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => onCopy(value, label)}
+            className="h-8 w-8 rounded-lg text-gray-500 hover:bg-white hover:text-gray-800 flex items-center justify-center"
+            aria-label={`Copiar ${label}`}
+            title={`Copiar ${label}`}
+          >
+            <Clipboard size={15} />
+          </button>
+          {href && (
+            <button
+              type="button"
+              onClick={() => window.open(href, '_blank', 'noopener,noreferrer')}
+              className="h-8 w-8 rounded-lg text-gray-500 hover:bg-white hover:text-gray-800 flex items-center justify-center"
+              aria-label={`Abrir ${label}`}
+              title={`Abrir ${label}`}
+            >
+              <ExternalLink size={15} />
+            </button>
+          )}
+        </div>
+      </div>
+      <p className="mt-1 break-all font-mono text-xs leading-5 text-gray-700">{value}</p>
+    </div>
+  )
+}
+
+function ChannelCard({
+  title,
+  icon,
+  accent,
+  badges,
+  msg,
+  loading,
+  buttonText,
+  loadingText,
+  onClick,
+  children,
+}: {
+  title: string
+  icon: ReactNode
+  accent: ChannelAccent
+  badges: string[]
+  msg: Message | null
+  loading: boolean
+  buttonText: string
+  loadingText: string
+  onClick: () => void
+  children?: ReactNode
+}) {
+  const color = accent === 'green'
+    ? {
+        bg: 'bg-green-50',
+        border: 'border-green-100',
+        icon: 'bg-green-500 text-white',
+        chip: 'bg-green-50 text-green-700 border-green-100',
+        button: 'bg-green-500 hover:bg-green-600 active:bg-green-700',
+      }
+    : {
+        bg: 'bg-sky-50',
+        border: 'border-sky-100',
+        icon: 'bg-sky-500 text-white',
+        chip: 'bg-sky-50 text-sky-700 border-sky-100',
+        button: 'bg-sky-500 hover:bg-sky-600 active:bg-sky-700',
+      }
+
+  return (
+    <div className={`rounded-2xl border ${color.border} bg-white p-4 shadow-sm`}>
+      <div className={`-m-4 mb-4 rounded-t-2xl ${color.bg} px-4 py-4`}>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className={`h-11 w-11 rounded-2xl ${color.icon} flex items-center justify-center shadow-sm`}>
+              {icon}
+            </div>
+            <div>
+              <h2 className="font-semibold text-gray-900">{title}</h2>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {badges.map(badge => (
+                  <span key={badge} className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${color.chip}`}>
+                    {badge}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+          <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
+        </div>
+      </div>
+      <Msg msg={msg} />
+      {children}
+      <button
+        className={`mt-3 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors ${color.button}`}
+        onClick={onClick}
+        disabled={loading}
+      >
+        {loading ? loadingText : buttonText}
+        {!loading && <ExternalLink size={16} />}
+      </button>
+    </div>
+  )
+}
 
 export default function Settings() {
   const navigate = useNavigate()
-  const { profile, setProfile, session } = useStore()
+  const { profile, setProfile, couple, setCouple, session } = useStore()
 
   const [name, setName] = useState(profile?.name || '')
   const [income, setIncome] = useState(String(profile?.monthly_income || ''))
   const [gender, setGender] = useState<'male' | 'female'>(profile?.gender || 'female')
+  const [balance, setBalance] = useState(String(couple?.initial_balance ?? ''))
   const [newEmail, setNewEmail] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
 
-  const [profileMsg, setProfileMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
-  const [emailMsg, setEmailMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
-  const [passMsg, setPassMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
-  const [telegramMsg, setTelegramMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
-  const [whatsappMsg, setWhatsappMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+  const [profileMsg, setProfileMsg] = useState<Message | null>(null)
+  const [balanceMsg, setBalanceMsg] = useState<Message | null>(null)
+  const [emailMsg, setEmailMsg] = useState<Message | null>(null)
+  const [passMsg, setPassMsg] = useState<Message | null>(null)
+  const [telegramMsg, setTelegramMsg] = useState<Message | null>(null)
+  const [whatsappMsg, setWhatsappMsg] = useState<Message | null>(null)
   const [copyMsg, setCopyMsg] = useState('')
   const [telegramUrl, setTelegramUrl] = useState('')
   const [whatsappMessage, setWhatsappMessage] = useState('')
   const [whatsappUrl, setWhatsappUrl] = useState('')
 
   const [savingProfile, setSavingProfile] = useState(false)
+  const [savingBalance, setSavingBalance] = useState(false)
   const [savingEmail, setSavingEmail] = useState(false)
   const [savingPass, setSavingPass] = useState(false)
   const [connectingTelegram, setConnectingTelegram] = useState(false)
@@ -58,6 +206,20 @@ export default function Settings() {
     }
   }
 
+  const handleSaveBalance = async () => {
+    if (!couple) return
+    setSavingBalance(true); setBalanceMsg(null)
+    try {
+      const updated = await updateCoupleBalance(couple.id, parseFloat(balance) || 0)
+      setCouple(updated)
+      setBalanceMsg({ type: 'ok', text: 'Saldo atualizado!' })
+    } catch {
+      setBalanceMsg({ type: 'err', text: 'Erro ao salvar saldo.' })
+    } finally {
+      setSavingBalance(false)
+    }
+  }
+
   const handleSaveEmail = async () => {
     if (!newEmail) return
     setSavingEmail(true); setEmailMsg(null)
@@ -65,8 +227,8 @@ export default function Settings() {
       await updateEmail(newEmail)
       setEmailMsg({ type: 'ok', text: 'Email atualizado com sucesso!' })
       setNewEmail('')
-    } catch (e: any) {
-      setEmailMsg({ type: 'err', text: e.response?.data?.detail || 'Erro ao atualizar email.' })
+    } catch (error: unknown) {
+      setEmailMsg({ type: 'err', text: getApiErrorMessage(error, 'Erro ao atualizar email.') })
     } finally {
       setSavingEmail(false)
     }
@@ -84,8 +246,8 @@ export default function Settings() {
       await updatePassword(newPassword)
       setPassMsg({ type: 'ok', text: 'Senha alterada com sucesso!' })
       setNewPassword(''); setConfirmPassword('')
-    } catch (e: any) {
-      setPassMsg({ type: 'err', text: e.response?.data?.detail || 'Erro ao alterar senha.' })
+    } catch (error: unknown) {
+      setPassMsg({ type: 'err', text: getApiErrorMessage(error, 'Erro ao alterar senha.') })
     } finally {
       setSavingPass(false)
     }
@@ -127,127 +289,6 @@ export default function Settings() {
     await navigator.clipboard.writeText(value)
     setCopyMsg(`${label} copiado`)
     window.setTimeout(() => setCopyMsg(''), 1800)
-  }
-
-  const Msg = ({ msg }: { msg: { type: 'ok' | 'err'; text: string } | null }) => {
-    if (!msg) return null
-    return (
-      <div className={`flex items-center gap-2 text-sm px-3 py-2 rounded-xl mt-2 ${
-        msg.type === 'ok' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'
-      }`}>
-        {msg.type === 'ok' ? <Check size={14} /> : <AlertCircle size={14} />}
-        {msg.text}
-      </div>
-    )
-  }
-
-  const ResultBox = ({ label, value, href }: { label: string; value: string; href?: string }) => {
-    if (!value) return null
-    return (
-      <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50 p-3">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{label}</p>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => copyValue(value, label)}
-              className="h-8 w-8 rounded-lg text-gray-500 hover:bg-white hover:text-gray-800 flex items-center justify-center"
-              aria-label={`Copiar ${label}`}
-              title={`Copiar ${label}`}
-            >
-              <Clipboard size={15} />
-            </button>
-            {href && (
-              <button
-                type="button"
-                onClick={() => window.open(href, '_blank', 'noopener,noreferrer')}
-                className="h-8 w-8 rounded-lg text-gray-500 hover:bg-white hover:text-gray-800 flex items-center justify-center"
-                aria-label={`Abrir ${label}`}
-                title={`Abrir ${label}`}
-              >
-                <ExternalLink size={15} />
-              </button>
-            )}
-          </div>
-        </div>
-        <p className="mt-1 break-all font-mono text-xs leading-5 text-gray-700">{value}</p>
-      </div>
-    )
-  }
-
-  const ChannelCard = ({
-    title,
-    icon,
-    accent,
-    badges,
-    msg,
-    loading,
-    buttonText,
-    loadingText,
-    onClick,
-    children,
-  }: {
-    title: string
-    icon: React.ReactNode
-    accent: 'sky' | 'green'
-    badges: string[]
-    msg: { type: 'ok' | 'err'; text: string } | null
-    loading: boolean
-    buttonText: string
-    loadingText: string
-    onClick: () => void
-    children?: React.ReactNode
-  }) => {
-    const color = accent === 'green'
-      ? {
-          bg: 'bg-green-50',
-          border: 'border-green-100',
-          icon: 'bg-green-500 text-white',
-          chip: 'bg-green-50 text-green-700 border-green-100',
-          button: 'bg-green-500 hover:bg-green-600 active:bg-green-700',
-        }
-      : {
-          bg: 'bg-sky-50',
-          border: 'border-sky-100',
-          icon: 'bg-sky-500 text-white',
-          chip: 'bg-sky-50 text-sky-700 border-sky-100',
-          button: 'bg-sky-500 hover:bg-sky-600 active:bg-sky-700',
-        }
-
-    return (
-      <div className={`rounded-2xl border ${color.border} bg-white p-4 shadow-sm`}>
-        <div className={`-m-4 mb-4 rounded-t-2xl ${color.bg} px-4 py-4`}>
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className={`h-11 w-11 rounded-2xl ${color.icon} flex items-center justify-center shadow-sm`}>
-                {icon}
-              </div>
-              <div>
-                <h2 className="font-semibold text-gray-900">{title}</h2>
-                <div className="mt-1 flex flex-wrap gap-1.5">
-                  {badges.map(badge => (
-                    <span key={badge} className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${color.chip}`}>
-                      {badge}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
-          </div>
-        </div>
-        <Msg msg={msg} />
-        {children}
-        <button
-          className={`mt-3 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors ${color.button}`}
-          onClick={onClick}
-          disabled={loading}
-        >
-          {loading ? loadingText : buttonText}
-          {!loading && <ExternalLink size={16} />}
-        </button>
-      </div>
-    )
   }
 
   return (
@@ -330,6 +371,31 @@ export default function Settings() {
           </div>
         </div>
 
+        {/* Saldo da carteira */}
+        <div className="card">
+          <div className="flex items-center gap-2 mb-4">
+            <Wallet size={18} className="text-purple-500" />
+            <h2 className="font-semibold text-gray-800">Saldo da carteira</h2>
+          </div>
+          <div className="space-y-3">
+            <p className="text-sm text-gray-400">
+              Esse valor e o ponto de partida do "Saldo atual" no painel. A partir dele, cada gasto
+              desconta e cada entrada soma, acumulando mes a mes.
+            </p>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Saldo atual em conta</label>
+              <div className="relative">
+                <span className="absolute left-4 top-3 text-gray-400 text-sm">R$</span>
+                <input className="input pl-10" type="number" value={balance} onChange={e => setBalance(e.target.value)} placeholder="0,00" />
+              </div>
+            </div>
+            <Msg msg={balanceMsg} />
+            <button className="btn-primary py-2.5" onClick={handleSaveBalance} disabled={savingBalance}>
+              {savingBalance ? 'Salvando...' : 'Salvar saldo'}
+            </button>
+          </div>
+        </div>
+
         <div className="space-y-3">
           <div className="flex items-end justify-between">
             <div>
@@ -350,8 +416,8 @@ export default function Settings() {
             loadingText="Gerando link..."
             onClick={handleConnectWhatsapp}
           >
-            <ResultBox label="Mensagem" value={whatsappMessage} />
-            <ResultBox label="Link" value={whatsappUrl} href={whatsappUrl} />
+            <ResultBox label="Mensagem" value={whatsappMessage} onCopy={copyValue} />
+            <ResultBox label="Link" value={whatsappUrl} href={whatsappUrl} onCopy={copyValue} />
           </ChannelCard>
 
           <ChannelCard
@@ -365,7 +431,7 @@ export default function Settings() {
             loadingText="Gerando link..."
             onClick={handleConnectTelegram}
           >
-            <ResultBox label="Link" value={telegramUrl} href={telegramUrl} />
+            <ResultBox label="Link" value={telegramUrl} href={telegramUrl} onCopy={copyValue} />
           </ChannelCard>
         </div>
 

@@ -97,12 +97,16 @@ export const joinCouple = (invite_token: string, split_mode: string) =>
 
 export const getMyCouple = () => api.get('/couples/me').then(r => r.data)
 
+export const updateCoupleBalance = (coupleId: string | number, initial_balance: number) =>
+  api.put(`/couples/${coupleId}/balance`, { initial_balance }).then(r => r.data)
+
 // --- Expenses ---
 export const addExpense = (coupleId: string | number, data: {
   paid_by_id?: string; amount: number; category: string
   description?: string; split_type: string; date?: string
   payer_amounts?: Record<string, number>
   type?: 'income' | 'expense'
+  payment_method?: 'pix' | 'cash' | 'debit' | 'credit_card'
 }) => api.post(`/couples/${coupleId}/expenses/`, data).then(r => r.data)
 
 export const getExpenses = (coupleId: string | number, month?: number, year?: number) =>
@@ -138,15 +142,25 @@ export const deleteGoal = (coupleId: string | number, goalId: string | number) =
   api.delete(`/couples/${coupleId}/goals/${goalId}`).then(r => r.data)
 
 // --- Categories ---
-export interface ExpenseCategory { id: string; name: string; value: string; emoji: string; type: 'income' | 'expense' }
+export interface ExpenseCategory {
+  id: string
+  name: string
+  value: string
+  emoji: string
+  type: 'income' | 'expense'
+  cost_type?: 'fixed' | 'variable'
+  due_day?: number | null
+  is_system?: boolean
+  system_key?: string | null
+}
 
 export const getCategories = (coupleId: string | number) =>
   api.get(`/couples/${coupleId}/categories/`).then(r => r.data as ExpenseCategory[])
 
-export const createCategory = (coupleId: string | number, data: { name: string; emoji: string; type?: 'income' | 'expense' }) =>
+export const createCategory = (coupleId: string | number, data: { name: string; emoji: string; type?: 'income' | 'expense'; cost_type?: 'fixed' | 'variable'; due_day?: number | null }) =>
   api.post(`/couples/${coupleId}/categories/`, data).then(r => r.data as ExpenseCategory)
 
-export const updateCategory = (coupleId: string | number, categoryId: string, data: { name?: string; emoji?: string }) =>
+export const updateCategory = (coupleId: string | number, categoryId: string, data: { name?: string; emoji?: string; cost_type?: 'fixed' | 'variable'; due_day?: number | null }) =>
   api.put(`/couples/${coupleId}/categories/${categoryId}`, data).then(r => r.data as ExpenseCategory)
 
 export const deleteCategory = (coupleId: string | number, categoryId: string) =>

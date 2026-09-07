@@ -2,19 +2,37 @@ import calendar
 from datetime import datetime, date
 from bson import ObjectId
 from backend.mongo_client import db
+from backend.services.credit_card_service import (
+    CREDIT_CARD_CATEGORY_VALUE,
+    CREDIT_CARD_SYSTEM_KEY,
+    CreditCardDueDayRequired,
+    calculate_credit_card_due_date,
+    is_credit_card_category,
+    is_credit_card_payment_method,
+    normalize_payment_method,
+)
+
+
+def _format_date(value) -> str:
+    if isinstance(value, datetime):
+        return value.strftime("%Y-%m-%d")
+    if isinstance(value, date):
+        return value.isoformat()
+    return str(value) if value else ""
 
 
 def _ser_expense(doc: dict) -> dict:
     paid_by = doc.get("paid_by") or {}
-    d = doc.get("date")
-    date_str = d.strftime("%Y-%m-%d") if isinstance(d, datetime) else str(d)
     return {
         "id": str(doc["_id"]),
         "amount": doc["amount"],
         "category": doc["category"],
         "description": doc.get("description", ""),
         "split_type": doc["split_type"],
-        "date": date_str,
+        "date": _format_date(doc.get("date")),
+        "purchase_date": _format_date(doc.get("purchase_date")),
+        "payment_method": doc.get("payment_method", "cash"),
+        "credit_card_due_day": doc.get("credit_card_due_day"),
         "source": doc.get("source", "manual"),
         "type": doc.get("type", "expense"),
         "paid_by": {
@@ -23,6 +41,23 @@ def _ser_expense(doc: dict) -> dict:
         },
         "payer_amounts": doc.get("payer_amounts") or {},
     }
+
+
+def _get_credit_card_due_day(couple_id: str, payment_method: str) -> int | None:
+    if not is_credit_card_payment_method(payment_method):
+        return None
+
+    credit_card_category = db.categories.find_one({
+        "couple_id": ObjectId(couple_id),
+        "$or": [
+            {"system_key": CREDIT_CARD_SYSTEM_KEY},
+            {"value": CREDIT_CARD_CATEGORY_VALUE},
+        ],
+    })
+    due_day = credit_card_category.get("due_day") if credit_card_category else None
+    if due_day is None:
+        raise CreditCardDueDayRequired("Configure o dia de vencimento do cartão de crédito antes de lançar no crédito.")
+    return int(due_day)
 
 
 def add_expense(
@@ -36,8 +71,15 @@ def add_expense(
     source: str = "manual",
     payer_amounts: dict[str, float] | None = None,
     type: str = "expense",
+    payment_method: str = "cash",
 ) -> dict:
-    d = expense_date or date.today()
+    purchase_date = expense_date or date.today()
+    normalized_payment_method = normalize_payment_method(payment_method)
+    if type != "income" and is_credit_card_category(category):
+        normalized_payment_method = "credit_card"
+    due_day = _get_credit_card_due_day(couple_id, normalized_payment_method) if type != "income" else None
+    effective_date = calculate_credit_card_due_date(purchase_date, due_day) if due_day else purchase_date
+
     doc = {
         "couple_id": ObjectId(couple_id),
         "paid_by_id": paid_by_id,
@@ -45,11 +87,15 @@ def add_expense(
         "category": category,
         "description": description,
         "split_type": split_type,
-        "date": datetime(d.year, d.month, d.day),
+        "date": datetime(effective_date.year, effective_date.month, effective_date.day),
+        "payment_method": normalized_payment_method,
         "source": source,
         "type": type,
         "created_at": datetime.utcnow(),
     }
+    if due_day:
+        doc["purchase_date"] = datetime(purchase_date.year, purchase_date.month, purchase_date.day)
+        doc["credit_card_due_day"] = due_day
     if payer_amounts:
         doc["payer_amounts"] = {k: float(v) for k, v in payer_amounts.items()}
     result = db.expenses.insert_one(doc)

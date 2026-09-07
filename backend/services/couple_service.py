@@ -93,6 +93,7 @@ def get_couple(couple_id: str) -> dict | None:
             {"$unwind": {"path": "$user2", "preserveNullAndEmptyArrays": True}},
             {"$project": {
                 "split_mode": 1, "invite_token": 1, "is_complete": 1,
+                "initial_balance": 1,
                 "user1_id": 1, "user2_id": 1,
                 "user1._id": 1, "user1.name": 1, "user1.monthly_income": 1, "user1.gender": 1,
                 "user2._id": 1, "user2.name": 1, "user2.monthly_income": 1, "user2.gender": 1,
@@ -102,6 +103,7 @@ def get_couple(couple_id: str) -> dict | None:
             return None
         doc = docs[0]
         doc["id"] = str(doc.pop("_id"))
+        doc["initial_balance"] = float(doc.get("initial_balance") or 0)
 
         u1 = doc.get("user1")
         if u1:
@@ -160,6 +162,14 @@ def join_couple(couple_id: str, user2_id: str, split_mode: str) -> dict:
     ids = [uid for uid in [user1_id, user2_id] if uid]
     if ids:
         db.profiles.update_many({"_id": {"$in": ids}}, {"$set": {"couple_id": oid}})
+    return get_couple(couple_id) or {}
+
+
+def set_initial_balance(couple_id: str, amount: float) -> dict:
+    db.couples.update_one(
+        {"_id": ObjectId(couple_id)},
+        {"$set": {"initial_balance": float(amount)}},
+    )
     return get_couple(couple_id) or {}
 
 

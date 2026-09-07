@@ -10,6 +10,7 @@ import httpx
 from backend.bot.handlers.natural_language import parse_expense
 from backend.mongo_client import db
 from backend.services import couple_service, expense_service, transaction_service
+from backend.services.credit_card_service import CreditCardDueDayRequired
 
 TOKEN_TTL_MINUTES = 15
 
@@ -203,16 +204,25 @@ async def process_messages_upsert(payload: dict) -> dict:
         await send_whatsapp_text(phone, f"Receita de R$ {parsed['amount']:.2f} salva!", instance)
         return {"processed": True, "type": "income"}
 
-    expense_service.add_expense(
-        couple_id=ctx["couple_id"],
-        paid_by_id=ctx["user_id"],
-        amount=parsed["amount"],
-        category=parsed["category"],
-        description=parsed.get("description", ""),
-        split_type=parsed.get("split_type", "couple"),
-        expense_date=parsed.get("date"),
-        source="whatsapp",
-    )
+    try:
+        expense_service.add_expense(
+            couple_id=ctx["couple_id"],
+            paid_by_id=ctx["user_id"],
+            amount=parsed["amount"],
+            category=parsed["category"],
+            description=parsed.get("description", ""),
+            split_type=parsed.get("split_type", "couple"),
+            expense_date=parsed.get("date"),
+            source="whatsapp",
+            payment_method=parsed.get("payment_method", "cash"),
+        )
+    except CreditCardDueDayRequired:
+        await send_whatsapp_text(
+            phone,
+            "Configure o vencimento do cartão de crédito no app antes de lançar gastos no crédito.",
+            instance,
+        )
+        return {"processed": False, "reason": "credit_card_due_day_missing"}
 
     scope_label = "do casal" if parsed.get("split_type") == "couple" else "pessoal"
     await send_whatsapp_text(

@@ -13,33 +13,56 @@ const CATEGORY_ICONS: Record<string, string> = {
   streaming: '🎬', lazer: '🎉', casa: '🛋️', pessoal: '👤', outros: '📦',
 }
 
+type SummaryData = {
+  total_expenses: number
+  user1_name: string
+  user2_name: string
+  user1_paid: number
+  user2_paid: number
+  balance: number
+  balance_description: string
+  by_category: Record<string, number>
+  bills_total: number
+  bills_paid: number
+  bills_pending: number
+}
+
+type ExpenseRecord = {
+  id: string
+  amount: number
+  category: string
+  date: string
+  paid_by?: { name?: string }
+}
+
 export default function Summary() {
   const navigate = useNavigate()
   const { couple } = useStore()
   const today = new Date()
   const [month, setMonth] = useState(today.getMonth() + 1)
   const [year, setYear] = useState(today.getFullYear())
-  const [summary, setSummary] = useState<any>(null)
-  const [expenses, setExpenses] = useState<any[]>([])
+  const [summary, setSummary] = useState<SummaryData | null>(null)
+  const [expenses, setExpenses] = useState<ExpenseRecord[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!couple) return
-    setLoading(true)
     Promise.all([
       getSummary(couple.id, month, year),
       getExpenses(couple.id, month, year),
     ]).then(([s, e]) => {
-      setSummary(s)
-      setExpenses(e)
+      setSummary(s as SummaryData)
+      setExpenses(Array.isArray(e) ? e as ExpenseRecord[] : [])
     }).finally(() => setLoading(false))
   }, [couple, month, year])
 
   const prevMonth = () => {
+    setLoading(true)
     if (month === 1) { setMonth(12); setYear(y => y - 1) }
     else setMonth(m => m - 1)
   }
   const nextMonth = () => {
+    setLoading(true)
     if (month === 12) { setMonth(1); setYear(y => y + 1) }
     else setMonth(m => m + 1)
   }
@@ -148,7 +171,7 @@ export default function Summary() {
               <div className="card mb-4">
                 <h3 className="font-semibold text-gray-700 mb-3">Gastos do mês</h3>
                 <div className="space-y-2">
-                  {expenses.map((e: any) => (
+                  {expenses.map((e) => (
                     <div key={e.id} className="flex items-center gap-3">
                       <span className="text-xl">{CATEGORY_ICONS[e.category] || '📦'}</span>
                       <div className="flex-1">

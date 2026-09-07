@@ -81,4 +81,66 @@ body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: #f8f7
   .theme-male .to-purple-50 { --tw-gradient-to: #eff6ff var(--tw-gradient-to-position); }
   .theme-male .to-purple-500 { --tw-gradient-to: #0ea5e9 var(--tw-gradient-to-position); }
   .theme-male .to-purple-600 { --tw-gradient-to: #2563eb var(--tw-gradient-to-position); }
+
+  .auth-theme-female {
+    --auth-bg: #FFF8FC;
+    --auth-soft-blob: rgb(251 207 232 / 0.45);
+    --auth-right-blob: rgb(244 233 255 / 0.9);
+    --auth-primary: #EC3E92;
+    --auth-primary-start: #FF2F92;
+    --auth-primary-bright: #FF3C9A;
+    --auth-primary-strong: #D92D7D;
+    --auth-accent-soft: #FCE8F2;
+    --auth-border-soft: #FBCFE8;
+    --auth-focus-ring: #FCE7F3;
+    --auth-logo-shadow: rgb(217 45 125 / 0.24);
+    --auth-tab-shadow: rgb(236 62 146 / 0.1);
+    --auth-button-shadow: rgb(236 62 146 / 0.24);
+    --auth-button-shadow-hover: rgb(236 62 146 / 0.3);
+    --auth-illustration-base: #FCE8F2;
+    --auth-illustration-muted: #F9D8EA;
+    --auth-illustration-soft: #F7CBE4;
+    --auth-illustration-light: #F2BADA;
+    --auth-illustration-mid: #F7C3DE;
+    --auth-illustration-strong: #D95C9A;
+    --auth-illustration-deep: #C94788;
+    --auth-illustration-accent: #F09BC6;
+    --auth-illustration-accent-strong: #EA82B8;
+    --auth-illustration-cream: #FFE4F1;
+    --auth-illustration-highlight: #FFD4EA;
+    --auth-illustration-stem: #F3A7CD;
+    --auth-illustration-leaf: #F4B4D5;
+    --auth-illustration-pot: #FFEAF4;
+  }
+
+  .auth-theme-male {
+    --auth-bg: #F7FBFF;
+    --auth-soft-blob: rgb(191 219 254 / 0.5);
+    --auth-right-blob: rgb(224 242 254 / 0.9);
+    --auth-primary: #2563EB;
+    --auth-primary-start: #0EA5E9;
+    --auth-primary-bright: #38BDF8;
+    --auth-primary-strong: #1D4ED8;
+    --auth-accent-soft: #DBEAFE;
+    --auth-border-soft: #BFDBFE;
+    --auth-focus-ring: #DBEAFE;
+    --auth-logo-shadow: rgb(37 99 235 / 0.22);
+    --auth-tab-shadow: rgb(37 99 235 / 0.12);
+    --auth-button-shadow: rgb(37 99 235 / 0.24);
+    --auth-button-shadow-hover: rgb(37 99 235 / 0.3);
+    --auth-illustration-base: #DBEAFE;
+    --auth-illustration-muted: #BFDBFE;
+    --auth-illustration-soft: #93C5FD;
+    --auth-illustration-light: #BAE6FD;
+    --auth-illustration-mid: #7DD3FC;
+    --auth-illustration-strong: #2563EB;
+    --auth-illustration-deep: #1D4ED8;
+    --auth-illustration-accent: #38BDF8;
+    --auth-illustration-accent-strong: #0EA5E9;
+    --auth-illustration-cream: #EFF6FF;
+    --auth-illustration-highlight: #E0F2FE;
+    --auth-illustration-stem: #60A5FA;
+    --auth-illustration-leaf: #93C5FD;
+    --auth-illustration-pot: #EFF6FF;
+  }
 }

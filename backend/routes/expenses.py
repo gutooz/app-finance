@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from backend.auth import get_current_user
 from backend.services import expense_service, couple_service
+from backend.services.credit_card_service import CreditCardDueDayRequired
 
 router = APIRouter(prefix="/couples/{couple_id}/expenses", tags=["expenses"])
 
@@ -18,6 +19,7 @@ class ExpenseCreate(BaseModel):
     date: Optional[date] = None
     source: str = "manual"
     type: str = "expense"
+    payment_method: str = "cash"
 
 
 def _check_couple_access(couple_id: str, user_id: str) -> dict:
@@ -38,18 +40,22 @@ def add_expense(couple_id: str, data: ExpenseCreate, current_user: dict = Depend
         total_paid = sum(data.payer_amounts.values())
         if abs(total_paid - data.amount) > 0.01:
             raise HTTPException(400, "A soma dos valores de cada pessoa deve ser igual ao valor total")
-    return expense_service.add_expense(
-        couple_id=couple_id,
-        paid_by_id=data.paid_by_id or current_user["id"],
-        amount=data.amount,
-        category=data.category,
-        description=data.description,
-        split_type=data.split_type,
-        expense_date=data.date,
-        source=data.source,
-        payer_amounts=data.payer_amounts,
-        type=data.type,
-    )
+    try:
+        return expense_service.add_expense(
+            couple_id=couple_id,
+            paid_by_id=data.paid_by_id or current_user["id"],
+            amount=data.amount,
+            category=data.category,
+            description=data.description,
+            split_type=data.split_type,
+            expense_date=data.date,
+            source=data.source,
+            payer_amounts=data.payer_amounts,
+            type=data.type,
+            payment_method=data.payment_method,
+        )
+    except CreditCardDueDayRequired as exc:
+        raise HTTPException(400, str(exc)) from exc
 
 
 @router.get("/")

@@ -3,6 +3,23 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AlertCircle, Check, Send } from 'lucide-react'
 import { completeTelegramProfile, getTelegramCompletionProfile } from '../api/client'
 
+type Message = { type: 'ok' | 'err'; text: string }
+
+type CompletionProfile = {
+  name?: string
+  monthly_income?: number
+  gender?: 'male' | 'female'
+}
+
+function getApiErrorMessage(error: unknown, fallback: string) {
+  if (typeof error === 'object' && error && 'response' in error) {
+    const response = (error as { response?: { data?: { detail?: string } } }).response
+    if (response?.data?.detail) return response.data.detail
+  }
+  if (error instanceof Error) return error.message
+  return fallback
+}
+
 export default function CompleteProfile() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
@@ -13,24 +30,33 @@ export default function CompleteProfile() {
   const [gender, setGender] = useState<'male' | 'female'>('female')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(Boolean(token))
   const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+  const [message, setMessage] = useState<Message | null>(
+    token ? null : { type: 'err', text: 'Link invalido.' },
+  )
 
   useEffect(() => {
-    if (!token) {
-      setMessage({ type: 'err', text: 'Link invalido.' })
-      setLoading(false)
-      return
-    }
+    if (!token) return
+    let cancelled = false
+
     getTelegramCompletionProfile(token)
-      .then(profile => {
+      .then((profile: CompletionProfile) => {
+        if (cancelled) return
         setName(profile.name || '')
         setIncome(String(profile.monthly_income || ''))
         setGender(profile.gender || 'female')
       })
-      .catch(() => setMessage({ type: 'err', text: 'Link invalido ou expirado.' }))
-      .finally(() => setLoading(false))
+      .catch(() => {
+        if (!cancelled) setMessage({ type: 'err', text: 'Link invalido ou expirado.' })
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
   }, [token])
 
   const handleSubmit = async () => {
@@ -51,8 +77,8 @@ export default function CompleteProfile() {
       })
       setMessage({ type: 'ok', text: 'Perfil concluido. Entre com seu email e senha.' })
       setTimeout(() => navigate('/auth'), 900)
-    } catch (e: any) {
-      setMessage({ type: 'err', text: e.response?.data?.detail || 'Erro ao concluir perfil.' })
+    } catch (error: unknown) {
+      setMessage({ type: 'err', text: getApiErrorMessage(error, 'Erro ao concluir perfil.') })
     } finally {
       setSaving(false)
     }

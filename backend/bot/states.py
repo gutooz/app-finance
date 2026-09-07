@@ -4,16 +4,10 @@
     ONBOARD_INCOME,
     ONBOARD_CHOICE,
     ONBOARD_TOKEN,
-    ONBOARD_SPLIT,
     # Login
     LOGIN_EMAIL,
     LOGIN_PASSWORD,
-) = range(7)
-
-SPLIT_MODES = {
-    "50_50": "50/50 — Metade cada um",
-    "proportional": "Proporcional à renda",
-}
+) = range(6)
 
 CATEGORY_KEYWORDS: dict[str, list[str]] = {
     "mercado": ["mercado", "supermercado", "feira", "groceries", "compras"],

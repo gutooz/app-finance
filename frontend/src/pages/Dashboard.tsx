@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Plus, Home, Target, BarChart2, LogOut, CalendarDays, Settings,
@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { getSummary, getExpenses, getBills } from '../api/client'
 import { useStore } from '../store/useStore'
+import { getMonthlyBalance, getMonthlyIncomeTotal } from '../utils/finance'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const MS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
@@ -40,28 +41,30 @@ function DonutChart({ segments, total }: { segments: DonutSeg[]; total: number }
   const r = 36
   const circ = 2 * Math.PI * r
   const sum = segments.reduce((a, b) => a + b.value, 0) || 1
-  let cum = 0
+  const segmentViews = segments.map((seg, i) => {
+    const previousTotal = segments.slice(0, i).reduce((value, item) => value + item.value, 0)
+    return {
+      ...seg,
+      dash: (seg.value / sum) * circ,
+      rot: -90 + (previousTotal / sum) * 360,
+    }
+  })
 
   return (
     <div className="relative flex-shrink-0" style={{ width: 110, height: 110 }}>
       <svg viewBox="0 0 100 100" className="w-full h-full">
         <circle cx="50" cy="50" r={r} fill="none" stroke="#f1f5f9" strokeWidth="14" />
-        {segments.map((seg, i) => {
-          const dash = (seg.value / sum) * circ
-          const rot = -90 + (cum / sum) * 360
-          cum += seg.value
-          return (
-            <circle
-              key={i}
-              cx="50" cy="50" r={r}
-              fill="none"
-              stroke={seg.color}
-              strokeWidth="14"
-              strokeDasharray={`${dash} ${circ - dash}`}
-              transform={`rotate(${rot} 50 50)`}
-            />
-          )
-        })}
+        {segmentViews.map((seg, i) => (
+          <circle
+            key={`${seg.color}-${i}`}
+            cx="50" cy="50" r={r}
+            fill="none"
+            stroke={seg.color}
+            strokeWidth="14"
+            strokeDasharray={`${seg.dash} ${circ - seg.dash}`}
+            transform={`rotate(${seg.rot} 50 50)`}
+          />
+        ))}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center px-1">
         <span className="text-[10px] font-bold text-gray-800 leading-tight text-center">
@@ -75,6 +78,42 @@ function DonutChart({ segments, total }: { segments: DonutSeg[]; total: number }
 
 // ─── BarChart ─────────────────────────────────────────────────────────────────
 interface BarPoint { month: string; value: number }
+
+type GoalSummary = {
+  name: string
+  emoji?: string
+  percent: number
+  current: number
+  target: number
+}
+
+type DashboardSummary = {
+  total_expenses: number
+  total_income?: number
+  user1_paid: number
+  user2_paid: number
+  goals?: GoalSummary[]
+  by_category?: Record<string, number>
+  balance_description?: string
+  year?: number
+}
+
+type ExpenseRecord = {
+  id: string
+  amount: number
+  category: string
+  description?: string
+  date?: string
+  type?: string
+}
+
+type BillRecord = {
+  id: string
+  name: string
+  amount: number
+  due_day: number
+  is_paid?: boolean
+}
 
 function BarChart({ data, variant = 'female' }: { data: BarPoint[]; variant?: 'female' | 'male' }) {
   const max = Math.max(...data.map(d => d.value), 1)
@@ -124,7 +163,7 @@ function BarChart({ data, variant = 'female' }: { data: BarPoint[]; variant?: 'f
 }
 
 // ─── MiniCalendar ─────────────────────────────────────────────────────────────
-function MiniCalendar({ bills, initMonth, initYear }: { bills: any[]; initMonth: number; initYear: number }) {
+function MiniCalendar({ bills, initMonth, initYear }: { bills: BillRecord[]; initMonth: number; initYear: number }) {
   const today = new Date()
   const [calM, setCalM] = useState(initMonth)
   const [calY, setCalY] = useState(initYear)
@@ -135,7 +174,7 @@ function MiniCalendar({ bills, initMonth, initYear }: { bills: any[]; initMonth:
   for (let i = 0; i < firstDay; i++) cells.push(null)
   for (let i = 1; i <= dim; i++) cells.push(i)
 
-  const billDays = new Set((bills || []).filter((b: any) => !b.is_paid).map((b: any) => b.due_day as number))
+  const billDays = new Set((bills || []).filter((b) => !b.is_paid).map((b) => b.due_day))
   const isToday = (d: number) => d === today.getDate() && calY === today.getFullYear() && calM === today.getMonth()
 
   const prev = () => {
@@ -198,10 +237,10 @@ export default function Dashboard() {
   const month = today.getMonth() + 1   // 1-12
   const year = today.getFullYear()
 
-  const [summary, setSummary]       = useState<any>(null)
-  const [prevSummary, setPrevSummary] = useState<any>(null)
-  const [expenses, setExpenses]     = useState<any[]>([])
-  const [bills, setBills]           = useState<any[]>([])
+  const [summary, setSummary]       = useState<DashboardSummary | null>(null)
+  const [prevSummary, setPrevSummary] = useState<DashboardSummary | null>(null)
+  const [expenses, setExpenses]     = useState<ExpenseRecord[]>([])
+  const [bills, setBills]           = useState<BillRecord[]>([])
   const [monthlyHistory, setMonthlyHistory] = useState<BarPoint[]>([])
   const [loading, setLoading]       = useState(true)
 
@@ -225,13 +264,14 @@ export default function Dashboard() {
       getBills(id, month, year).catch(() => []),
       Promise.all(pastMonths.map(({ m, y }) => getSummary(id, m, y).catch(() => null))),
     ]).then(([s, ps, e, b, history]) => {
-      setSummary(s)
-      setPrevSummary(ps)
-      setExpenses(Array.isArray(e) ? e : [])
-      setBills(Array.isArray(b) ? b : [])
+      const historyItems = history as Array<DashboardSummary | null>
+      setSummary(s as DashboardSummary)
+      setPrevSummary(ps as DashboardSummary | null)
+      setExpenses(Array.isArray(e) ? e as ExpenseRecord[] : [])
+      setBills(Array.isArray(b) ? b as BillRecord[] : [])
       setMonthlyHistory(pastMonths.map(({ m }, idx) => ({
         month: MS[m - 1],
-        value: history[idx]?.total_expenses || 0,
+        value: historyItems[idx]?.total_expenses || 0,
       })))
     }).finally(() => setLoading(false))
   }, [couple]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -246,16 +286,18 @@ export default function Dashboard() {
   const partnerName  = partner?.name || 'Parceiro(a)'
   const profileGender = profile?.gender === 'male' ? 'male' : 'female'
 
-  const totalIncome   = (couple.user1.monthly_income || 0) + (couple.user2?.monthly_income || 0)
+  const declaredIncome = (couple.user1.monthly_income || 0) + (couple.user2?.monthly_income || 0)
+  const incomeEntries = summary?.total_income || 0
+  const totalIncome   = getMonthlyIncomeTotal(declaredIncome, incomeEntries)
   const totalExpenses = summary?.total_expenses || 0
-  const saldo         = totalIncome - totalExpenses
+  const saldo         = getMonthlyBalance(totalIncome, totalExpenses)
 
   const myPaid      = isUser1 ? (summary?.user1_paid || 0) : (summary?.user2_paid || 0)
   const partnerPaid = isUser1 ? (summary?.user2_paid || 0) : (summary?.user1_paid || 0)
   const maxPaid     = Math.max(myPaid, partnerPaid, 0.01)
 
-  const goals          = (summary?.goals || []) as any[]
-  const completedGoals = goals.filter((g: any) => g.percent >= 100).length
+  const goals          = summary?.goals || []
+  const completedGoals = goals.filter((g) => g.percent >= 100).length
 
   const byCategory  = (summary?.by_category || {}) as Record<string, number>
   const catEntries  = Object.entries(byCategory).slice(0, 5) as [string, number][]
@@ -265,12 +307,10 @@ export default function Dashboard() {
   const diffPct       = hasComparison ? ((totalExpenses - prevTotal) / prevTotal) * 100 : 0
   const prevMonthName = MS[month === 1 ? 11 : month - 2]
 
-  const recentExpenses = expenses.filter((e: any) => e.type !== 'income').slice(0, 4)
-  const upcomingBills  = bills.filter((b: any) => !b.is_paid).slice(0, 5)
+  const recentExpenses = expenses.filter((e) => e.type !== 'income').slice(0, 4)
+  const upcomingBills  = bills.filter((b) => !b.is_paid).slice(0, 5)
 
-  const chartData: BarPoint[] = useMemo(() => {
-    return [...monthlyHistory, { month: MS[month - 1], value: totalExpenses }]
-  }, [month, totalExpenses, monthlyHistory])
+  const chartData: BarPoint[] = [...monthlyHistory, { month: MS[month - 1], value: totalExpenses }]
 
   const balDesc = summary?.balance_description
     ? summary.balance_description.replace('Voces estao quites!', 'Vocês estão quites!')
@@ -304,7 +344,7 @@ export default function Dashboard() {
       iconBg: 'bg-green-50',
       label: 'Receitas',
       value: fmt(totalIncome),
-      sub: 'renda total do casal',
+      sub: incomeEntries > 0 ? 'renda + entradas do mês' : 'renda total do casal',
       subColor: 'text-green-600',
       trend: '',
     },
@@ -313,7 +353,7 @@ export default function Dashboard() {
       iconBg: 'bg-purple-50',
       label: 'Saldo atual',
       value: fmt(saldo),
-      sub: 'receitas − gastos do mês',
+      sub: 'entradas - saídas do mês',
       subColor: saldo >= 0 ? 'text-green-600' : 'text-red-500',
       trend: '',
     },
@@ -578,7 +618,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="space-y-2.5">
-                {recentExpenses.map((exp: any) => {
+                {recentExpenses.map((exp) => {
                   const info = catInfo(exp.category)
                   const d = exp.date ? new Date(exp.date + 'T12:00') : null
                   const now = new Date()
@@ -631,7 +671,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="space-y-2.5">
-                {upcomingBills.map((bill: any) => (
+                {upcomingBills.map((bill) => (
                   <div key={bill.id} className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0 text-sm">
                       🏠
@@ -671,7 +711,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="space-y-2.5">
-                {goals.slice(0, 2).map((g: any, i: number) => {
+                {goals.slice(0, 2).map((g, i) => {
                   const bar = i === 0 ? ['bg-pink-500', 'bg-pink-100'] : ['bg-green-500', 'bg-green-100']
                   return (
                     <div key={g.name} className="bg-gray-50 rounded-xl p-3">
