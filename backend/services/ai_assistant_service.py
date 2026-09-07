@@ -31,7 +31,15 @@ from backend.services import (
 
 OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
-OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openai/gpt-5.2")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openai/gpt-5.6-sol")
+OPENROUTER_FALLBACK_MODELS = [
+    model.strip()
+    for model in os.getenv(
+        "OPENROUTER_FALLBACK_MODELS",
+        "openai/gpt-5.6-terra,google/gemini-3.8-flash,anthropic/claude-sonnet-5,openai/gpt-chat-latest",
+    ).split(",")
+    if model.strip()
+]
 OPENROUTER_HTTP_REFERER = os.getenv("OPENROUTER_HTTP_REFERER", os.getenv("FRONTEND_URL", "")).strip()
 OPENROUTER_APP_TITLE = os.getenv("OPENROUTER_APP_TITLE", "FinCouple").strip()
 # Quantas rodadas de tool-calling permitimos antes de forçar uma resposta final.
@@ -592,9 +600,17 @@ def _normalize_assistant_message(message: dict) -> dict:
     return normalized
 
 
+def _openrouter_models() -> list[str]:
+    models = [OPENROUTER_MODEL, *OPENROUTER_FALLBACK_MODELS]
+    deduped: list[str] = []
+    for model in models:
+        if model and model not in deduped:
+            deduped.append(model)
+    return deduped
+
+
 def _openrouter_chat(messages: list[dict], use_tools: bool = True) -> dict:
     payload = {
-        "model": OPENROUTER_MODEL,
         "messages": messages,
         "stream": False,
         "temperature": 0.3,
@@ -603,6 +619,11 @@ def _openrouter_chat(messages: list[dict], use_tools: bool = True) -> dict:
             "require_parameters": True,
         },
     }
+    models = _openrouter_models()
+    if len(models) == 1:
+        payload["model"] = models[0]
+    else:
+        payload["models"] = models
     if use_tools:
         payload["tools"] = TOOLS
     try:
@@ -616,6 +637,11 @@ def _openrouter_chat(messages: list[dict], use_tools: bool = True) -> dict:
         raise AIProviderUnavailable(
             f"Nao consegui falar com a OpenRouter em {OPENROUTER_BASE_URL}. Detalhe: {exc}"
         ) from exc
+    if resp.status_code == 404 and "No endpoints found" in resp.text:
+        raise AIProviderUnavailable(
+            "A OpenRouter nao encontrou um modelo compativel com as ferramentas da Fin. "
+            "Confira OPENROUTER_MODEL/OPENROUTER_FALLBACK_MODELS na Vercel."
+        )
     if resp.status_code >= 400:
         raise AIProviderUnavailable(f"OpenRouter retornou erro {resp.status_code}: {resp.text[:300]}")
 
@@ -716,6 +742,7 @@ def health() -> dict:
             "ok": True,
             "base_url": OPENROUTER_BASE_URL,
             "model": OPENROUTER_MODEL,
+            "fallback_models": OPENROUTER_FALLBACK_MODELS,
             "model_available": available,
         }
     except Exception as exc:  # noqa: BLE001
