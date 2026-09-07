@@ -36,7 +36,7 @@ OPENROUTER_FALLBACK_MODELS = [
     model.strip()
     for model in os.getenv(
         "OPENROUTER_FALLBACK_MODELS",
-        "openai/gpt-5.6-terra,google/gemini-3.8-flash,anthropic/claude-sonnet-5,openai/gpt-chat-latest",
+        "openai/gpt-5.6-terra,google/gemini-3.8-flash",
     ).split(",")
     if model.strip()
 ]
@@ -606,7 +606,7 @@ def _openrouter_models() -> list[str]:
     for model in models:
         if model and model not in deduped:
             deduped.append(model)
-    return deduped
+    return deduped[:3]
 
 
 def _openrouter_chat(messages: list[dict], use_tools: bool = True) -> dict:

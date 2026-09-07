@@ -41,7 +41,7 @@ def test_openrouter_chat_uses_configured_endpoint_and_secret(monkeypatch):
     monkeypatch.setattr(
         ai_assistant_service,
         "OPENROUTER_FALLBACK_MODELS",
-        ["openai/gpt-5.6-sol", "google/gemini-3.8-flash"],
+        ["openai/gpt-5.6-sol", "google/gemini-3.8-flash", "anthropic/claude-sonnet-5"],
     )
     monkeypatch.setattr(ai_assistant_service.httpx, "Client", _Client)
 
