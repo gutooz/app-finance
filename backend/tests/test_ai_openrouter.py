@@ -38,6 +38,7 @@ def test_openrouter_chat_uses_configured_endpoint_and_secret(monkeypatch):
     monkeypatch.setattr(ai_assistant_service, "OPENROUTER_API_KEY", "test-key")
     monkeypatch.setattr(ai_assistant_service, "OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
     monkeypatch.setattr(ai_assistant_service, "OPENROUTER_MODEL", "openai/gpt-5.2")
+    monkeypatch.setattr(ai_assistant_service, "OPENROUTER_MAX_TOKENS", 1200)
     monkeypatch.setattr(
         ai_assistant_service,
         "OPENROUTER_FALLBACK_MODELS",
@@ -55,6 +56,7 @@ def test_openrouter_chat_uses_configured_endpoint_and_secret(monkeypatch):
         "openai/gpt-5.6-sol",
         "google/gemini-3.8-flash",
     ]
+    assert _Client.last_request["json"]["max_tokens"] == 1200
     assert _Client.last_request["json"]["provider"] == {
         "data_collection": "deny",
         "require_parameters": True,

@@ -46,6 +46,7 @@ OPENROUTER_APP_TITLE = os.getenv("OPENROUTER_APP_TITLE", "FinCouple").strip()
 MAX_TOOL_ROUNDS = 5
 # Timeout generoso: alguns provedores podem levar mais tempo em chamadas com tools.
 OPENROUTER_TIMEOUT = float(os.getenv("OPENROUTER_TIMEOUT", os.getenv("OLLAMA_TIMEOUT", "120")))
+OPENROUTER_MAX_TOKENS = int(os.getenv("OPENROUTER_MAX_TOKENS", "1200"))
 
 
 class AIProviderUnavailable(Exception):
@@ -614,6 +615,7 @@ def _openrouter_chat(messages: list[dict], use_tools: bool = True) -> dict:
         "messages": messages,
         "stream": False,
         "temperature": 0.3,
+        "max_tokens": OPENROUTER_MAX_TOKENS,
         "provider": {
             "data_collection": "deny",
             "require_parameters": True,
@@ -641,6 +643,11 @@ def _openrouter_chat(messages: list[dict], use_tools: bool = True) -> dict:
         raise AIProviderUnavailable(
             "A OpenRouter nao encontrou um modelo compativel com as ferramentas da Fin. "
             "Confira OPENROUTER_MODEL/OPENROUTER_FALLBACK_MODELS na Vercel."
+        )
+    if resp.status_code == 402:
+        raise AIProviderUnavailable(
+            "A OpenRouter informou que os creditos sao insuficientes para esta resposta. "
+            "Adicione creditos na OpenRouter ou reduza OPENROUTER_MAX_TOKENS na Vercel."
         )
     if resp.status_code >= 400:
         raise AIProviderUnavailable(f"OpenRouter retornou erro {resp.status_code}: {resp.text[:300]}")
