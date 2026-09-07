@@ -1,5 +1,5 @@
 """
-Assistente financeiro do casal — powered by Ollama (LLM local).
+Assistente financeiro do casal — powered by OpenRouter.
 
 Como funciona ("treino" do MVP):
   1. System prompt descreve TODAS as funcionalidades do sistema + contexto do casal.
@@ -9,10 +9,9 @@ Como funciona ("treino" do MVP):
      "entende o contexto" do que o usuário está falando.
 
 Requisitos de execução:
-  - Um servidor Ollama acessível (local: `ollama serve`; produção: uma VPS/GPU).
-  - Um modelo com suporte a tools já baixado, ex.: `ollama pull llama3.1`
-  - Variáveis de ambiente: OLLAMA_BASE_URL (default http://localhost:11434)
-                          OLLAMA_MODEL    (default llama3.1)
+  - OPENROUTER_API_KEY configurada no ambiente.
+  - OPENROUTER_MODEL apontando para um modelo com suporte a tools/function-calling.
+    Default: openai/gpt-5.2.
 """
 
 import json
@@ -30,16 +29,22 @@ from backend.services import (
     summary_service,
 )
 
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1")
+OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openai/gpt-5.2")
+OPENROUTER_HTTP_REFERER = os.getenv("OPENROUTER_HTTP_REFERER", os.getenv("FRONTEND_URL", "")).strip()
+OPENROUTER_APP_TITLE = os.getenv("OPENROUTER_APP_TITLE", "FinCouple").strip()
 # Quantas rodadas de tool-calling permitimos antes de forçar uma resposta final.
 MAX_TOOL_ROUNDS = 5
-# Timeout generoso: modelos locais em CPU podem ser lentos na primeira resposta.
-OLLAMA_TIMEOUT = float(os.getenv("OLLAMA_TIMEOUT", "120"))
+# Timeout generoso: alguns provedores podem levar mais tempo em chamadas com tools.
+OPENROUTER_TIMEOUT = float(os.getenv("OPENROUTER_TIMEOUT", os.getenv("OLLAMA_TIMEOUT", "120")))
 
 
-class OllamaUnavailable(Exception):
-    """Ollama não está acessível ou o modelo não está disponível."""
+class AIProviderUnavailable(Exception):
+    """O provedor de IA não está acessível ou não está configurado."""
+
+
+OllamaUnavailable = AIProviderUnavailable
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -139,7 +144,7 @@ Fale sempre em português do Brasil, de forma calorosa, direta e prática — co
 - Quando o usuário disser algo como "gastei 50 no mercado", "paguei a conta de luz", "quero juntar 5 mil pra viagem", "apaga aquele gasto", "desfaz o pagamento da conta de luz", identifique a intenção e use a ferramenta certa.
 - Antes de executar algo com valor alto, ambíguo, ou qualquer exclusão (delete_expense, delete_bill, delete_goal, delete_category), confirme rapidamente antes de agir — a menos que o usuário já tenha confirmado na mensagem. Para lançamentos claros, apenas faça e confirme o resultado.
 - Depois de uma ação, responda com uma frase curta confirmando o que foi feito e um insight útil quando fizer sentido.
-- Se o Ollama/ferramenta falhar, seja honesta sobre o que não deu certo."""
+- Se a IA/ferramenta falhar, seja honesta sobre o que não deu certo."""
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -558,33 +563,67 @@ def execute_tool(name: str, args: dict, context: dict, couple_id: str, current_u
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Loop de conversa com o Ollama
+# Loop de conversa com a OpenRouter
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _ollama_chat(messages: list[dict], use_tools: bool = True) -> dict:
+def _openrouter_headers() -> dict:
+    if not OPENROUTER_API_KEY:
+        raise AIProviderUnavailable("OPENROUTER_API_KEY nao configurada no ambiente.")
+
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    if OPENROUTER_HTTP_REFERER:
+        headers["HTTP-Referer"] = OPENROUTER_HTTP_REFERER
+    if OPENROUTER_APP_TITLE:
+        headers["X-OpenRouter-Title"] = OPENROUTER_APP_TITLE
+    return headers
+
+
+def _normalize_assistant_message(message: dict) -> dict:
+    normalized = {
+        "role": "assistant",
+        "content": message.get("content") or "",
+    }
+    tool_calls = message.get("tool_calls") or []
+    if tool_calls:
+        normalized["tool_calls"] = tool_calls
+    return normalized
+
+
+def _openrouter_chat(messages: list[dict], use_tools: bool = True) -> dict:
     payload = {
-        "model": OLLAMA_MODEL,
+        "model": OPENROUTER_MODEL,
         "messages": messages,
         "stream": False,
-        "options": {"temperature": 0.3},
+        "temperature": 0.3,
+        "provider": {
+            "data_collection": "deny",
+            "require_parameters": True,
+        },
     }
     if use_tools:
         payload["tools"] = TOOLS
     try:
-        with httpx.Client(timeout=OLLAMA_TIMEOUT) as client:
-            resp = client.post(f"{OLLAMA_BASE_URL}/api/chat", json=payload)
+        with httpx.Client(timeout=OPENROUTER_TIMEOUT) as client:
+            resp = client.post(
+                f"{OPENROUTER_BASE_URL}/chat/completions",
+                headers=_openrouter_headers(),
+                json=payload,
+            )
     except httpx.HTTPError as exc:
-        raise OllamaUnavailable(
-            f"Não consegui falar com o Ollama em {OLLAMA_BASE_URL}. "
-            f"Verifique se ele está rodando (`ollama serve`) e se o modelo '{OLLAMA_MODEL}' foi baixado. Detalhe: {exc}"
+        raise AIProviderUnavailable(
+            f"Nao consegui falar com a OpenRouter em {OPENROUTER_BASE_URL}. Detalhe: {exc}"
         ) from exc
-    if resp.status_code == 404:
-        raise OllamaUnavailable(
-            f"Modelo '{OLLAMA_MODEL}' não encontrado no Ollama. Rode: ollama pull {OLLAMA_MODEL}"
-        )
     if resp.status_code >= 400:
-        raise OllamaUnavailable(f"Ollama retornou erro {resp.status_code}: {resp.text[:300]}")
-    return resp.json()
+        raise AIProviderUnavailable(f"OpenRouter retornou erro {resp.status_code}: {resp.text[:300]}")
+
+    data = resp.json()
+    choices = data.get("choices") or []
+    if not choices:
+        raise AIProviderUnavailable("OpenRouter nao retornou resposta.")
+    return _normalize_assistant_message(choices[0].get("message") or {})
 
 
 def chat(
@@ -616,8 +655,7 @@ def chat(
     action_results: list[dict] = []
 
     for _ in range(MAX_TOOL_ROUNDS):
-        data = _ollama_chat(messages, use_tools=True)
-        msg = data.get("message") or {}
+        msg = _openrouter_chat(messages, use_tools=True)
         tool_calls = msg.get("tool_calls") or []
 
         # Preserva a mensagem do assistente (com tool_calls) no histórico da conversa
@@ -627,7 +665,7 @@ def chat(
             reply = (msg.get("content") or "").strip()
             if not reply:
                 reply = "Certo!"
-            return {"reply": reply, "actions": actions, "action_results": action_results, "model": OLLAMA_MODEL}
+            return {"reply": reply, "actions": actions, "action_results": action_results, "model": OPENROUTER_MODEL}
 
         # Executa cada chamada de ferramenta e devolve o resultado ao modelo
         for call in tool_calls:
@@ -645,32 +683,40 @@ def chat(
             result = execute_tool(fname, fargs, context, couple_id, current_user_id)
             actions.append(fname)
             action_results.append({"name": fname, "args": fargs, "result": result})
-            messages.append({
+            tool_message = {
                 "role": "tool",
                 "content": json.dumps(result, ensure_ascii=False, default=str),
-            })
+            }
+            if call.get("id"):
+                tool_message["tool_call_id"] = call["id"]
+            messages.append(tool_message)
 
     # Estourou o limite de rodadas: pede uma resposta final sem ferramentas
-    data = _ollama_chat(messages, use_tools=False)
-    reply = ((data.get("message") or {}).get("content") or "Feito!").strip()
-    return {"reply": reply, "actions": actions, "action_results": action_results, "model": OLLAMA_MODEL}
+    msg = _openrouter_chat(messages, use_tools=False)
+    reply = (msg.get("content") or "Feito!").strip()
+    return {"reply": reply, "actions": actions, "action_results": action_results, "model": OPENROUTER_MODEL}
 
 
 def health() -> dict:
-    """Verifica se o Ollama está acessível e se o modelo está disponível."""
+    """Verifica se a OpenRouter está configurada e acessível."""
+    if not OPENROUTER_API_KEY:
+        return {
+            "ok": False,
+            "base_url": OPENROUTER_BASE_URL,
+            "model": OPENROUTER_MODEL,
+            "error": "OPENROUTER_API_KEY nao configurada.",
+        }
     try:
         with httpx.Client(timeout=10) as client:
-            resp = client.get(f"{OLLAMA_BASE_URL}/api/tags")
+            resp = client.get(f"{OPENROUTER_BASE_URL}/models", headers=_openrouter_headers())
         resp.raise_for_status()
-        models = [m.get("name", "") for m in resp.json().get("models", [])]
-        base = OLLAMA_MODEL.split(":")[0]
-        available = any(m == OLLAMA_MODEL or m.split(":")[0] == base for m in models)
+        models = [m.get("id", "") for m in resp.json().get("data", [])]
+        available = OPENROUTER_MODEL in models or OPENROUTER_MODEL.startswith("~")
         return {
             "ok": True,
-            "base_url": OLLAMA_BASE_URL,
-            "model": OLLAMA_MODEL,
+            "base_url": OPENROUTER_BASE_URL,
+            "model": OPENROUTER_MODEL,
             "model_available": available,
-            "installed_models": models,
         }
     except Exception as exc:  # noqa: BLE001
-        return {"ok": False, "base_url": OLLAMA_BASE_URL, "model": OLLAMA_MODEL, "error": str(exc)}
+        return {"ok": False, "base_url": OPENROUTER_BASE_URL, "model": OPENROUTER_MODEL, "error": str(exc)}

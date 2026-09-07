@@ -81,7 +81,7 @@ export default function ChatAssistant() {
       const detail =
         e.response?.status === 503
           ? (e.response?.data?.detail ||
-            'A IA (Ollama) não está acessível agora. Confira se o servidor está rodando.')
+            'A IA não está acessível agora. Confira a configuração da OpenRouter.')
           : 'Ops, não consegui responder agora. Tente de novo em instantes.'
       setMessages([...next, { role: 'assistant', content: detail, error: true }])
     } finally {

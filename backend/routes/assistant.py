@@ -37,7 +37,7 @@ def chat(couple_id: str, data: ChatIn, current_user: dict = Depends(get_current_
             user_message=data.message,
             history=[t.model_dump() for t in data.history],
         )
-    except ai_assistant_service.OllamaUnavailable as exc:
+    except ai_assistant_service.AIProviderUnavailable as exc:
         raise HTTPException(503, str(exc))
 
 

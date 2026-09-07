@@ -47,7 +47,7 @@ def _should_notify_partner(action: dict) -> bool:
 
 
 async def _typing_loop(context, chat_id: int, action: str = "typing"):
-    """Mantém o indicador 'digitando...' vivo enquanto a Fin processa (Ollama/Whisper podem demorar)."""
+    """Mantém o indicador 'digitando...' vivo enquanto a Fin processa (IA/Whisper podem demorar)."""
     try:
         while True:
             await context.bot.send_chat_action(chat_id=chat_id, action=action)
@@ -94,7 +94,7 @@ async def handle_ai_message(update, context, text: str) -> None:
             user_message=text,
             history=history,
         )
-    except ai_assistant_service.OllamaUnavailable as exc:
+    except ai_assistant_service.AIProviderUnavailable as exc:
         await update.message.reply_text(f"⚠️ {exc}")
         return
     finally:
