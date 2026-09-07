@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Clipboard,
   ExternalLink,
+  KeyRound,
   Landmark,
   Lock,
   Mail,
@@ -328,6 +329,38 @@ export default function Settings() {
           </div>
           <ChevronRight size={18} className="text-gray-300" />
         </button>
+
+        {/* Codigo do casal */}
+        {couple?.invite_token && (
+          <div className="card">
+            <div className="flex items-start gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-pink-500 text-white flex items-center justify-center">
+                <KeyRound size={20} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-gray-900">Codigo do casal</p>
+                <p className="text-sm text-gray-400">Use este codigo para vincular a pessoa parceira</p>
+                <div className="mt-3 flex items-center gap-2 rounded-xl border border-gray-100 bg-gray-50 p-2">
+                  <span className="min-w-0 flex-1 break-all font-mono text-sm font-semibold text-gray-800">
+                    {couple.invite_token}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => copyValue(couple.invite_token, 'Codigo do casal')}
+                    className="h-9 w-9 shrink-0 rounded-lg text-gray-500 hover:bg-white hover:text-gray-800 flex items-center justify-center"
+                    aria-label="Copiar codigo do casal"
+                    title="Copiar codigo do casal"
+                  >
+                    <Clipboard size={16} />
+                  </button>
+                </div>
+                {copyMsg === 'Codigo do casal copiado' && (
+                  <p className="mt-2 text-xs font-medium text-green-600">{copyMsg}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Perfil */}
         <div className="card">
